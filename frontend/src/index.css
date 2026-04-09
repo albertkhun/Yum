@@ -1,0 +1,59 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&family=Sora:wght@600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+  body { @apply font-sans bg-gray-50 text-gray-800 antialiased; }
+  h1, h2, h3 { @apply font-display; }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-brand text-white font-semibold px-5 py-3 rounded-xl
+           hover:bg-brand-dark active:scale-95 transition-all duration-150
+           text-sm sm:text-base min-h-[44px] touch-manipulation;
+  }
+  .btn-secondary {
+    @apply bg-white text-brand border-2 border-brand font-semibold
+           px-5 py-3 rounded-xl hover:bg-orange-50 active:scale-95
+           transition-all duration-150 text-sm sm:text-base
+           min-h-[44px] touch-manipulation;
+  }
+  .btn-ghost {
+    @apply text-gray-600 font-medium px-4 py-2 rounded-lg
+           hover:bg-gray-100 transition-colors duration-150
+           min-h-[44px] touch-manipulation;
+  }
+  .btn-danger {
+    @apply bg-red-500 text-white font-semibold px-5 py-3 rounded-xl
+           hover:bg-red-600 active:scale-95 transition-all duration-150
+           min-h-[44px] touch-manipulation;
+  }
+  .input {
+    @apply w-full border border-gray-200 rounded-xl px-4 py-3
+           text-sm sm:text-base focus:outline-none focus:ring-2
+           focus:ring-brand/40 focus:border-brand bg-white
+           placeholder-gray-400 transition-all duration-150 min-h-[44px];
+  }
+  .label { @apply block text-sm font-semibold text-gray-700 mb-1.5; }
+  .card {
+    @apply bg-white rounded-2xl shadow-sm border border-gray-100
+           overflow-hidden transition-shadow duration-200 hover:shadow-md;
+  }
+  .page-wrapper { @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8; }
+  .badge { @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold; }
+  .badge-green  { @apply bg-green-100 text-green-700; }
+  .badge-red    { @apply bg-red-100 text-red-600; }
+  .badge-orange { @apply bg-orange-100 text-orange-700; }
+  .badge-gray   { @apply bg-gray-100 text-gray-600; }
+  .badge-blue   { @apply bg-blue-100 text-blue-700; }
+  .section-title { @apply text-xl sm:text-2xl lg:text-3xl font-display font-bold text-gray-900; }
+}
+
+@layer utilities {
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+}
