@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { MapPin, Phone, IndianRupee, CheckCircle2, ArrowLeft, Share2, Flag } from 'lucide-react';
 import ImageCarousel   from '../../components/common/ImageCarousel';
 import MapPicker       from '../../components/common/MapPicker';
+import ReviewSection   from '../../components/common/ReviewSection';
 import { PageSpinner } from '../../components/common/Spinner';
 import { listingAPI }  from '../../services/api';
 import { useAuth }     from '../../context/AuthContext';
@@ -101,7 +102,7 @@ export default function ListingDetail() {
           {location?.coordinates?.lat && location?.coordinates?.lng && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6">
               <h2 className="font-display font-bold text-gray-900 text-lg mb-4">
-                Property Location
+                📍 Property Location
               </h2>
               <MapPicker
                 lat={location.coordinates.lat}
@@ -171,6 +172,15 @@ export default function ListingDetail() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Reviews — full width below the grid */}
+      <div className="mt-8 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100
+                      dark:border-gray-800 shadow-sm p-5 sm:p-6">
+        <ReviewSection
+          listingId={listing._id}
+          listingOwnerId={createdBy?._id || createdBy}
+        />
       </div>
     </div>
   );

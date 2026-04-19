@@ -9,8 +9,10 @@ dotenv.config();
 const app = express();
 
 app.use(cors({
-  origin: 'http://localhost:5173',
-  origin: 'https://yumrental2026.onrender.com',
+  origin: [
+    "http://localhost:5173",
+    "https://yumrental2026.onrender.com"
+  ],
   
   credentials: true,
 }));
@@ -20,6 +22,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use('/api/auth',     require('./routes/authRoutes'));
 app.use('/api/listings', require('./routes/listingRoutes'));
+app.use('/api/listings/:listingId/reviews', require('./routes/reviewRoutes'));
 app.use('/api/admin',    require('./routes/adminRoutes'));
 
 app.get('/', (req, res) => {

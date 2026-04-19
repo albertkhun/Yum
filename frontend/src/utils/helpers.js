@@ -4,7 +4,7 @@ export const formatPrice = (amount, period) =>
 export const getImageUrl = (path) => {
   if (!path) return 'https://placehold.co/400x300/f97316/white?text=No+Image';
   if (path.startsWith('http')) return path;
-  return `${import.meta.env.VITE_API_BASE || 'http://localhost:5000'}${path}`;
+  return `${import.meta.env.VITE_API_BASE || 'http://localhost:5001'}${path}`;
 };
 
 export const truncate = (str, n = 80) =>

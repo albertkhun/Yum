@@ -43,6 +43,15 @@ export const listingAPI = {
   getPublicStats: () => api.get('/listings/stats'),
 };
 
+export const reviewAPI = {
+  getAll:  (listingId)           => api.get(`/listings/${listingId}/reviews`),
+  create:  (listingId, formData) => api.post(`/listings/${listingId}/reviews`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  update:  (listingId, reviewId, data) => api.put(`/listings/${listingId}/reviews/${reviewId}`, data),
+  delete:  (listingId, reviewId)       => api.delete(`/listings/${listingId}/reviews/${reviewId}`),
+};
+
 export const adminAPI = {
   getStats:       ()         => api.get('/admin/stats'),
   getAllListings:  (params)   => api.get('/admin/listings', { params }),

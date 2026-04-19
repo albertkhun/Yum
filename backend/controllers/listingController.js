@@ -1,10 +1,9 @@
 const Listing    = require('../models/Listing');
 const cloudinary = require('../utils/cloudinary');
 
-// Extract Cloudinary public_id from a stored URL so we can destroy it
+
 const getPublicId = (url) => {
-  // URL format: https://res.cloudinary.com/<cloud>/image/upload/v123456/yum/abcdef.jpg
-  // public_id  = yum/abcdef  (no extension)
+  
   try {
     const parts = url.split('/');
     const upload = parts.indexOf('upload');
@@ -64,30 +63,74 @@ const createListing = async (req, res) => {
 const getListings = async (req, res) => {
   try {
     const { search, category, district, minPrice, maxPrice, status, page = 1, limit = 12 } = req.query;
-    const query = { approved: true };
+
+    const match = { approved: true };
     if (search) {
       const regex = new RegExp(search, 'i');
-      query.$or = [
+      match.$or = [
         { title: regex }, { category: regex },
         { 'location.locality': regex }, { 'location.district': regex },
       ];
     }
-    if (category) query.category = category;
-    if (district) query['location.district'] = district;
-    if (status) query.status = status;
+    if (category) match.category = category;
+    if (district) match['location.district'] = district;
+    if (status)   match.status = status;
     if (minPrice || maxPrice) {
-      query['price.amount'] = {};
-      if (minPrice) query['price.amount'].$gte = Number(minPrice);
-      if (maxPrice) query['price.amount'].$lte = Number(maxPrice);
+      match['price.amount'] = {};
+      if (minPrice) match['price.amount'].$gte = Number(minPrice);
+      if (maxPrice) match['price.amount'].$lte = Number(maxPrice);
     }
-    const skip = (Number(page) - 1) * Number(limit);
-    const total = await Listing.countDocuments(query);
-    const listings = await Listing.find(query)
-      .populate('createdBy', 'name email phone')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(Number(limit));
-    res.json({ success: true, total, page: Number(page), pages: Math.ceil(total / Number(limit)), listings });
+
+    const skip  = (Number(page) - 1) * Number(limit);
+    const total = await Listing.countDocuments(match);
+
+    const listings = await Listing.aggregate([
+      { $match: match },
+      { $sort: { createdAt: -1 } },
+      { $skip: skip },
+      { $limit: Number(limit) },
+      // Join avg rating from Review collection
+      {
+        $lookup: {
+          from:         'reviews',
+          localField:   '_id',
+          foreignField: 'listing',
+          as:           'reviews',
+        },
+      },
+      {
+        $addFields: {
+          avgRating: {
+            $cond: [
+              { $gt: [{ $size: '$reviews' }, 0] },
+              { $round: [{ $avg: '$reviews.rating' }, 1] },
+              null,
+            ],
+          },
+          reviewCount: { $size: '$reviews' },
+        },
+      },
+      { $unset: 'reviews' }, // don't send full review docs
+      // Re-populate createdBy
+      {
+        $lookup: {
+          from:         'users',
+          localField:   'createdBy',
+          foreignField: '_id',
+          as:           'createdBy',
+          pipeline:     [{ $project: { name: 1, email: 1, phone: 1 } }],
+        },
+      },
+      { $unwind: { path: '$createdBy', preserveNullAndEmptyArrays: true } },
+    ]);
+
+    res.json({
+      success: true,
+      total,
+      page:  Number(page),
+      pages: Math.ceil(total / Number(limit)),
+      listings,
+    });
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch listings', error: err.message });
   }
