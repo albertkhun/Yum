@@ -68,10 +68,12 @@ export default function ListingCard({ listing }) {
           {truncate(title, 55)}
         </h3>
 
-        {/* Star rating — always shown */}
-        <div className="mb-2">
-          <StarRow avg={avgRating} count={reviewCount ?? 0} />
-        </div>
+        {/* Star rating — only shown when reviews exist */}
+        {avgRating && (
+          <div className="mb-2">
+            <StarRow avg={avgRating} count={reviewCount ?? 0} />
+          </div>
+        )}
 
         <div className="flex items-center gap-1.5 text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-3">
           <MapPin size={13} className="text-brand shrink-0" />
