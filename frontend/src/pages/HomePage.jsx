@@ -41,7 +41,7 @@ export default function HomePage() {
       ]);
 
       setFeatured(listingRes.data.listings || []);
-      setStats(statsRes.data.stats); // ✅ IMPORTANT
+      setStats(statsRes.data.stats); 
     } catch (err) {
       console.error(err);
     } finally {

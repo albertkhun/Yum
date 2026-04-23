@@ -26,21 +26,30 @@ api.interceptors.response.use(
 );
 
 export const authAPI = {
-  register: (data) => api.post('/auth/register', data),
-  login:    (data) => api.post('/auth/login', data),
-  getMe:    ()     => api.get('/auth/me'),
-  updateMe: (data) => api.put('/auth/me', data),
+  register:               (data)       => api.post('/auth/register', data),
+  login:                  (data)       => api.post('/auth/login', data),
+  googleLogin:            (credential) => api.post('/auth/google', { credential }),
+  completeGoogleProfile:  (data)       => api.post('/auth/google/complete', data),
+  getMe:                  ()           => api.get('/auth/me'),
+  updateMe:               (data)       => api.put('/auth/me', data),
+  updateRole:             (role)       => api.patch('/auth/role', { role }),
+  changePassword:         (data)       => api.post('/auth/change-password', data),
+  adminChangePassword:    (data)       => api.post('/auth/admin/change-password', data),
 };
 
 export const listingAPI = {
   getAll:        (params) => api.get('/listings', { params }),
   getById:       (id)     => api.get(`/listings/${id}`),
   getMyListings: ()       => api.get('/listings/my/listings'),
+  getPublicStats:()       => api.get('/listings/stats'),
   create: (formData) => api.post('/listings', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
   update: (id, formData) => api.put(`/listings/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
   delete:        (id)     => api.delete(`/listings/${id}`),
   toggleStatus:  (id)     => api.patch(`/listings/${id}/status`),
-  getPublicStats: () => api.get('/listings/stats'),
+  uploadVR: (id, formData) => api.patch(`/listings/${id}/vr`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  removeVR: (id) => api.patch(`/listings/${id}/vr`), // no file = remove
 };
 
 export const reviewAPI = {

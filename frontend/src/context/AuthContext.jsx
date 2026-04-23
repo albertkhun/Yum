@@ -14,19 +14,33 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = async (credentials) => {
-    const { data } = await authAPI.login(credentials);
+  const _save = (data) => {
     localStorage.setItem('token', data.token);
     localStorage.setItem('user', JSON.stringify(data.user));
     setUser(data.user);
+  };
+
+  const login    = async (creds) => { const { data } = await authAPI.login(creds);    _save(data); return data; };
+  const register = async (form)  => { const { data } = await authAPI.register(form);  _save(data); return data; };
+
+  // Google: returns { isNewUser, token, user } OR { isNewUser, googleProfile }
+  const googleLogin = async (credential) => {
+    const { data } = await authAPI.googleLogin(credential);
+    if (!data.isNewUser) _save(data);
     return data;
   };
 
-  const register = async (formData) => {
-    const { data } = await authAPI.register(formData);
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('user', JSON.stringify(data.user));
-    setUser(data.user);
+  const completeGoogleProfile = async (profileData) => {
+    const { data } = await authAPI.completeGoogleProfile(profileData);
+    _save(data);
+    return data;
+  };
+
+  const updateRole = async (role) => {
+    const { data } = await authAPI.updateRole(role);
+    const updated = { ...user, role: data.user.role };
+    localStorage.setItem('user', JSON.stringify(updated));
+    setUser(updated);
     return data;
   };
 
@@ -38,9 +52,15 @@ export const AuthProvider = ({ children }) => {
 
   const isAdmin = user?.role === 'admin';
   const isOwner = user?.role === 'owner' || user?.role === 'admin';
+  const needsRole = user && !user.role;
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, isAdmin, isOwner }}>
+    <AuthContext.Provider value={{
+      user, loading, login, register,
+      googleLogin, completeGoogleProfile,
+      updateRole, logout,
+      isAdmin, isOwner, needsRole,
+    }}>
       {children}
     </AuthContext.Provider>
   );

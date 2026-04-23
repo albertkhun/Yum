@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, LogIn, Home } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth }      from '../../context/AuthContext';
+import GoogleButton     from '../../components/common/GoogleButton';
 import toast from 'react-hot-toast';
 
 export default function LoginPage() {
@@ -19,9 +20,9 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const data = await login(form);
-      toast.success(`Welcome back, ${data.user.name}!`);
-      if (data.user.role === 'admin')
-              navigate('/admin');
+      toast.success(`Welcome back, ${data.user.name}! 👋`);
+      if (!data.user.role)                 navigate('/select-role');
+      else if (data.user.role === 'admin') navigate('/admin');
       else if (data.user.role === 'owner') navigate('/owner');
       else                                 navigate('/listings');
     } catch (err) {
@@ -40,7 +41,7 @@ export default function LoginPage() {
           <h1 className="font-display font-bold text-2xl sm:text-3xl text-gray-900 mb-1">Welcome back</h1>
           <p className="text-gray-500 text-sm">Sign in to your account</p>
         </div>
-        <div className="bg-white rounded-3xl shadow-xl shadow-orange-100/50 border border-orange-100/60 p-6 sm:p-8">
+        <div className="bg-white rounded-3xl border border-gray-100 shadow-none p-6 sm:p-8">
           <form onSubmit={submit} className="space-y-5">
             <div>
               <label className="label">Email address</label>
@@ -59,7 +60,10 @@ export default function LoginPage() {
               {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><LogIn size={18} />Sign In</>}
             </button>
           </form>
-        
+
+          {/* Google sign-in */}
+          <GoogleButton />
+
           <p className="text-center text-sm text-gray-500 mt-6">
             Don't have an account?{' '}
             <Link to="/register" className="text-brand font-semibold hover:underline">Register</Link>
