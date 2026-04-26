@@ -1,4 +1,5 @@
 
+
 const mongoose = require('mongoose');
 
 const listingSchema = new mongoose.Schema(
@@ -35,6 +36,7 @@ const listingSchema = new mongoose.Schema(
     facilities:     { type: [String], default: [] },
     images:         { type: [String], default: [] },
     contactNumber:  { type: String, required: [true, 'Contact number is required'] },
+    vrMediaUrl:     { type: String, default: '' },   // 360° panorama image or video URL
     whatsappNumber: { type: String, default: '' },
     status:         { type: String, enum: ['available', 'rented'], default: 'available' },
     approved:       { type: Boolean, default: false },

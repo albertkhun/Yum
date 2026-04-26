@@ -8,13 +8,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@react-oauth/google": "^0.12.2",
+    "@photo-sphere-viewer/core": "^5.7.4",
+    "@react-oauth/google": "^0.12.1",
     "axios": "^1.6.0",
     "lucide-react": "^0.383.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hot-toast": "^2.4.1",
-    "react-router-dom": "^6.18.0"
+    "react-router-dom": "^6.18.0",
+    "three": "^0.161.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.15",

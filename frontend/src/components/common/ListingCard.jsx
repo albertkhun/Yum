@@ -13,7 +13,7 @@ function StarRow({ avg, count }) {
           return (
             <span key={n} className="relative inline-block w-3.5 h-3.5">
               {/* Empty star (background) */}
-              <Star size={14} className="absolute inset-0 text-gray-300 dark:text-gray-600 fill-gray-300 dark:fill-gray-600" />
+              <Star size={14} className="absolute inset-0 text-gray-300 fill-gray-300" />
               {/* Filled star clipped to fill% */}
               <span
                 className="absolute inset-0 overflow-hidden"
@@ -26,19 +26,19 @@ function StarRow({ avg, count }) {
         })}
       </div>
       {avg ? (
-        <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-400 leading-none">
+        <span className="text-[11px] font-semibold text-gray-600 leading-none">
           {avg}
-          {count > 0 && <span className="font-normal text-gray-400 dark:text-gray-500"> ({count})</span>}
+          {count > 0 && <span className="font-normal text-gray-400"> ({count})</span>}
         </span>
       ) : (
-        <span className="text-[11px] text-gray-400 dark:text-gray-500 leading-none">No reviews</span>
+        <span className="text-[11px] text-gray-400 leading-none">No reviews</span>
       )}
     </div>
   );
 }
 
 export default function ListingCard({ listing }) {
-  const { _id, title, category, price, location, images, status, facilities, avgRating, reviewCount } = listing;
+  const { _id, title, category, price, location, images, status, facilities, avgRating, reviewCount, vrMediaUrl } = listing;
   return (
     <Link to={`/listings/${_id}`} className="card group block">
       <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
@@ -48,10 +48,15 @@ export default function ListingCard({ listing }) {
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           onError={(e) => { e.target.src = `https://placehold.co/400x300/f97316/white?text=${encodeURIComponent(category)}`; }}
         />
-        <div className="absolute top-3 left-3">
+        <div className="absolute top-3 left-3 flex flex-col gap-1.5">
           <span className={`badge text-xs font-semibold ${status === 'available' ? 'badge-green' : 'badge-red'}`}>
             {status === 'available' ? '● Available' : '● Rented'}
           </span>
+          {vrMediaUrl && (
+            <span className="badge text-xs font-semibold" style={{background:'rgba(0,0,0,0.65)',color:'#fff',backdropFilter:'blur(4px)'}}>
+              🥽 VR Tour
+            </span>
+          )}
         </div>
         <div className="absolute top-3 right-3">
           <span className={`badge text-xs ${getCategoryColor(category)}`}>{category}</span>
@@ -64,7 +69,7 @@ export default function ListingCard({ listing }) {
       </div>
 
       <div className="p-4">
-        <h3 className="font-display font-semibold text-gray-900 dark:text-white text-sm sm:text-base leading-snug mb-1.5 group-hover:text-brand transition-colors">
+        <h3 className="font-display font-semibold text-gray-900 text-sm sm:text-base leading-snug mb-1.5 group-hover:text-brand transition-colors">
           {truncate(title, 55)}
         </h3>
 
@@ -75,7 +80,7 @@ export default function ListingCard({ listing }) {
           </div>
         )}
 
-        <div className="flex items-center gap-1.5 text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-3">
+        <div className="flex items-center gap-1.5 text-xs sm:text-sm text-gray-500 mb-3">
           <MapPin size={13} className="text-brand shrink-0" />
           <span className="truncate">{location?.locality}, {location?.district}</span>
         </div>
@@ -83,15 +88,15 @@ export default function ListingCard({ listing }) {
         {facilities?.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-3">
             {facilities.slice(0, 3).map((f) => (
-              <span key={f} className="text-[10px] sm:text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded-full">{f}</span>
+              <span key={f} className="text-[10px] sm:text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{f}</span>
             ))}
             {facilities.length > 3 && (
-              <span className="text-[10px] sm:text-xs bg-gray-100 dark:bg-gray-800 text-gray-500 px-2 py-0.5 rounded-full">+{facilities.length - 3} more</span>
+              <span className="text-[10px] sm:text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">+{facilities.length - 3} more</span>
             )}
           </div>
         )}
 
-        <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-800">
+        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
           <div className="flex items-baseline gap-0.5">
             <IndianRupee size={14} className="text-brand" />
             <span className="font-display font-bold text-brand text-base sm:text-lg">

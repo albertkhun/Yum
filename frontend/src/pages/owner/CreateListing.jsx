@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 const PERIODS = ['per month', 'per week', 'per day'];
 const Req = () => <span className="text-red-400 ml-0.5">*</span>;
 const Section = ({ title, children }) => (
-  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6">
+  <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6">
     <h2 className="font-display font-bold text-gray-900 text-base sm:text-lg mb-4 pb-3 border-b border-gray-100">{title}</h2>
     {children}
   </div>
@@ -19,6 +19,7 @@ export default function CreateListing() {
   const navigate = useNavigate();
   const [loading,  setLoading]  = useState(false);
   const [previews, setPreviews] = useState([]);
+  const [vrFile,   setVrFile]   = useState(null);   // { file, url, type }
   const [coords,   setCoords]   = useState({ lat: null, lng: null });
   const [form, setForm] = useState({
     title: '', description: '', category: '',
@@ -44,6 +45,14 @@ export default function CreateListing() {
   };
 
   const removeImage = (idx) => setPreviews((prev) => prev.filter((_, i) => i !== idx));
+  const handleVR = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const url  = URL.createObjectURL(file);
+    const type = file.type.startsWith('video/') ? 'video' : 'image';
+    setVrFile({ file, url, type });
+  };
+
 
   const handleCoords = (pos) => {
     setCoords(pos ? { lat: pos.lat, lng: pos.lng } : { lat: null, lng: null });
@@ -65,8 +74,16 @@ export default function CreateListing() {
       if (coords.lat) fd.append('lat', coords.lat);
       if (coords.lng) fd.append('lng', coords.lng);
       previews.forEach(({ file }) => fd.append('images', file));
+      // VR is uploaded separately after listing is created (handled in OwnerDashboard)
+      // but we pass a flag so the backend knows
 
-      await listingAPI.create(fd);
+      const { data: listingData } = await listingAPI.create(fd);
+      // Upload VR media separately if provided
+      if (vrFile && listingData.listing?._id) {
+        const vrFd = new FormData();
+        vrFd.append('vrMedia', vrFile.file);
+        try { await listingAPI.uploadVR(listingData.listing._id, vrFd); } catch (_) {}
+      }
       toast.success('Listing submitted for review! ✅');
       navigate('/owner');
     } catch (err) {
@@ -112,12 +129,12 @@ export default function CreateListing() {
             <div>
               <label className="label">
                 WhatsApp Number
-                <span className="text-gray-400 font-normal ml-1"></span>
+                <span className="text-gray-400 font-normal ml-1">(if different from contact)</span>
               </label>
               <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-green-500 text-lg"></span>
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-green-500 text-lg">📱</span>
                 <input name="whatsappNumber" value={form.whatsappNumber} onChange={handle}
-                  className="input pl-10" placeholder="Enter Whatsapp Number" type="tel" />
+                  className="input pl-10" placeholder="Leave blank to use contact number" type="tel" />
               </div>
               <p className="text-xs text-gray-400 mt-1">Users will be redirected to this WhatsApp number</p>
             </div>
@@ -222,6 +239,41 @@ export default function CreateListing() {
         </Section>
 
         {/* Submit */}
+
+        <Section title="360° Virtual Tour (optional)">
+          <p className="text-sm text-gray-500 mb-4">
+            Upload a panorama image or 360° video so users can explore the space virtually.
+            Accepted: JPG, PNG, WEBP (panorama) · MP4, MOV, WEBM (video) · Max 200 MB
+          </p>
+          {!vrFile ? (
+            <label className="flex flex-col items-center justify-center border-2 border-dashed border-orange-200 bg-orange-50 rounded-2xl p-8 cursor-pointer hover:border-brand transition-colors">
+              <div className="w-12 h-12 bg-brand/10 rounded-2xl flex items-center justify-center mb-3">
+                <svg viewBox="0 0 24 24" className="w-6 h-6 text-brand fill-current">
+                  <path d="M20.5 7H3.5C2.67 7 2 7.67 2 8.5v7C2 16.33 2.67 17 3.5 17h4.62l1.5 2h4.76l1.5-2H20.5c.83 0 1.5-.67 1.5-1.5v-7C22 7.67 21.33 7 20.5 7zM9 13.5C9 14.88 7.88 16 6.5 16S4 14.88 4 13.5v-2C4 10.12 5.12 9 6.5 9S9 10.12 9 11.5v2zm9 0c0 1.38-1.12 2.5-2.5 2.5S13 14.88 13 13.5v-2C13 10.12 14.12 9 15.5 9S18 10.12 18 11.5v2z"/>
+                </svg>
+              </div>
+              <span className="text-sm font-semibold text-gray-700 mb-1">Upload 360° Media</span>
+              <span className="text-xs text-gray-400">Panorama image or 360° video</span>
+              <input type="file" accept="image/*,video/mp4,video/mov,video/webm,.mov" className="hidden" onChange={handleVR} />
+            </label>
+          ) : (
+            <div className="relative rounded-2xl overflow-hidden bg-gray-900 aspect-video">
+              {vrFile.type === 'video'
+                ? <video src={vrFile.url} className="w-full h-full object-cover" muted />
+                : <img src={vrFile.url} alt="VR preview" className="w-full h-full object-cover" />}
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                <span className="badge bg-brand text-white text-xs px-3 py-1.5">
+                  🥽 360° {vrFile.type === 'video' ? 'Video' : 'Panorama'} Selected
+                </span>
+              </div>
+              <button type="button" onClick={() => setVrFile(null)}
+                className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors">
+                <X size={14} />
+              </button>
+            </div>
+          )}
+        </Section>
+
         <div className="flex flex-col sm:flex-row gap-3 pt-2">
           <button type="submit" disabled={loading}
             className="btn-primary flex items-center justify-center gap-2 flex-1 disabled:opacity-60 disabled:cursor-not-allowed">
@@ -231,7 +283,7 @@ export default function CreateListing() {
           </button>
           <Link to="/owner" className="btn-secondary text-center flex-1 sm:flex-none sm:px-8">Cancel</Link>
         </div>
-        <p className="text-xs text-gray-400 text-center">Your listing will be reviewed by our team before going live (usually within 12hrs).</p>
+        <p className="text-xs text-gray-400 text-center">Your listing will be reviewed by our team before going live (usually within 24hrs).</p>
       </form>
     </div>
   );

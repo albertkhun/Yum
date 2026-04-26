@@ -1,9 +1,8 @@
 const Listing    = require('../models/Listing');
 const cloudinary = require('../utils/cloudinary');
 
-
+// Extract Cloudinary public_id from a stored URL so we can destroy it
 const getPublicId = (url) => {
-  
   try {
     const parts = url.split('/');
     const upload = parts.indexOf('upload');
@@ -49,6 +48,7 @@ const createListing = async (req, res) => {
       images,
       contactNumber,
       whatsappNumber: whatsappNumber || contactNumber || '',
+      vrMediaUrl: req.vrMediaUrl || '',
       createdBy: req.user.id,
       approved: req.user.role === 'admin',
     });
@@ -271,4 +271,45 @@ const getPublicStats = async (req, res) => {
   }
 };
 
-module.exports = { createListing, getListings, getListingById, getMyListings, updateListing, deleteListing, toggleStatus, getPublicStats };
+// ── PATCH /api/listings/:id/vr ─────────────────────────────
+const uploadVR = async (req, res) => {
+  try {
+    const listing = await Listing.findById(req.params.id);
+    if (!listing) return res.status(404).json({ message: 'Listing not found' });
+
+    if (listing.createdBy.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Not authorised' });
+    }
+
+    const vrMediaUrl = req.file ? req.file.path : '';
+
+    // Remove old VR if needed
+    if (!vrMediaUrl && listing.vrMediaUrl) {
+      try {
+        const publicId = listing.vrMediaUrl
+          .split('/')
+          .slice(-2)
+          .join('/')
+          .replace(/\.[^/.]+$/, '');
+
+        await cloudinary.uploader.destroy(publicId, { resource_type: 'auto' });
+      } catch (_) {}
+    }
+
+    listing.vrMediaUrl = vrMediaUrl;
+    await listing.save();
+
+    res.json({
+      success: true,
+      message: vrMediaUrl ? 'VR media uploaded' : 'VR media removed',
+      vrMediaUrl
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      message: 'Failed to upload VR media',
+      error: err.message
+    });
+  }
+};
+module.exports = { createListing, getListings, getListingById, getMyListings, updateListing, deleteListing, toggleStatus, getPublicStats, uploadVR };

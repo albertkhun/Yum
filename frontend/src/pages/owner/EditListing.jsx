@@ -14,6 +14,9 @@ export default function EditListing() {
   const [loading,        setLoading]        = useState(false);
   const [fetching,       setFetching]       = useState(true);
   const [existingImages, setExistingImages] = useState([]);
+  const [existingVR,     setExistingVR]     = useState('');
+  const [vrFile,         setVrFile]         = useState(null);
+  const [vrRemoved,      setVrRemoved]      = useState(false);
   const [newPreviews,    setNewPreviews]    = useState([]);
   const [coords,         setCoords]         = useState({ lat: null, lng: null });
   const [form, setForm] = useState({
@@ -36,6 +39,7 @@ export default function EditListing() {
           contactNumber: l.contactNumber, whatsappNumber: l.whatsappNumber || '', status: l.status,
         });
         setExistingImages(l.images || []);
+        setExistingVR(l.vrMediaUrl || '');
         if (l.location?.coordinates?.lat) {
           setCoords({ lat: l.location.coordinates.lat, lng: l.location.coordinates.lng });
         }
@@ -54,6 +58,13 @@ export default function EditListing() {
         : [...prev.facilities, f],
     }));
 
+
+  const handleVR = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setVrFile({ file, url: URL.createObjectURL(file), type: file.type.startsWith('video/') ? 'video' : 'image' });
+    setVrRemoved(false);
+  };
   const handleNewImages = (e) => {
     const files = Array.from(e.target.files);
     const total = existingImages.length + newPreviews.length + files.length;
@@ -75,6 +86,14 @@ export default function EditListing() {
       if (coords.lng) fd.append('lng', coords.lng);
       newPreviews.forEach(({ file }) => fd.append('images', file));
       await listingAPI.update(id, fd);
+      // Handle VR upload/removal
+      if (vrFile) {
+        const vrFd = new FormData();
+        vrFd.append('vrMedia', vrFile.file);
+        try { await listingAPI.uploadVR(id, vrFd); } catch (_) {}
+      } else if (vrRemoved && existingVR) {
+        try { await listingAPI.removeVR(id); } catch (_) {}
+      }
       toast.success('Listing updated! Pending re-review.');
       navigate('/owner');
     } catch (err) {
@@ -106,7 +125,7 @@ export default function EditListing() {
 
       <form onSubmit={submit} className="space-y-6">
         {/* Basic */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6">
+        <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6">
           <SectionTitle>Basic Information</SectionTitle>
           <div className="space-y-4">
             <div>
@@ -151,7 +170,7 @@ export default function EditListing() {
         </div>
 
         {/* Price */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6">
+        <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6">
           <SectionTitle>Pricing</SectionTitle>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -173,7 +192,7 @@ export default function EditListing() {
         </div>
 
         {/* Location */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6">
+        <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6">
           <SectionTitle>Location</SectionTitle>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -204,7 +223,7 @@ export default function EditListing() {
         </div>
 
         {/* Facilities */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6">
+        <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6">
           <SectionTitle>Facilities</SectionTitle>
           <div className="flex flex-wrap gap-2">
             {FACILITIES.map((f) => (
@@ -217,7 +236,7 @@ export default function EditListing() {
         </div>
 
         {/* Images */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6">
+        <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6">
           <SectionTitle>Photos</SectionTitle>
           <p className="text-xs text-gray-400 mb-4">Existing photos are kept. Upload new ones to add (max 6 total).</p>
           {existingImages.length > 0 && (
@@ -250,6 +269,46 @@ export default function EditListing() {
                 </div>
               ))}
             </div>
+          )}
+        </div>
+
+
+        {/* VR Section */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6">
+          <h2 className="font-display font-bold text-gray-900 text-base sm:text-lg mb-4 pb-3 border-b border-gray-100">360° Virtual Tour (optional)</h2>
+          {(existingVR && !vrRemoved && !vrFile) ? (
+            <div className="relative rounded-2xl overflow-hidden bg-gray-900 aspect-video">
+              {existingVR.includes('/video/') || /\.(mp4|mov|webm)/i.test(existingVR)
+                ? <video src={existingVR} className="w-full h-full object-cover" muted />
+                : <img src={existingVR} alt="VR" className="w-full h-full object-cover" />}
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                <span className="badge bg-brand text-white text-xs px-3 py-1.5">🥽 Current VR Tour</span>
+              </div>
+              <button type="button" onClick={() => setVrRemoved(true)}
+                className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors">
+                <X size={14} />
+              </button>
+            </div>
+          ) : vrFile ? (
+            <div className="relative rounded-2xl overflow-hidden bg-gray-900 aspect-video">
+              {vrFile.type === 'video'
+                ? <video src={vrFile.url} className="w-full h-full object-cover" muted />
+                : <img src={vrFile.url} alt="VR" className="w-full h-full object-cover" />}
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                <span className="badge bg-brand text-white text-xs px-3 py-1.5">🥽 New {vrFile.type === 'video' ? 'Video' : 'Panorama'}</span>
+              </div>
+              <button type="button" onClick={() => setVrFile(null)}
+                className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center">
+                <X size={14} />
+              </button>
+            </div>
+          ) : (
+            <label className="flex flex-col items-center justify-center border-2 border-dashed border-orange-200 bg-orange-50 rounded-2xl p-6 cursor-pointer hover:border-brand transition-colors">
+              <span className="text-2xl mb-2">🥽</span>
+              <span className="text-sm font-semibold text-gray-700 mb-1">{vrRemoved ? 'Upload replacement VR media' : 'Upload 360° Media'}</span>
+              <span className="text-xs text-gray-400">Panorama image or 360° video · Max 200 MB</span>
+              <input type="file" accept="image/*,video/mp4,video/mov,video/webm,.mov" className="hidden" onChange={handleVR} />
+            </label>
           )}
         </div>
 

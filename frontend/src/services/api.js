@@ -52,6 +52,7 @@ export const listingAPI = {
   removeVR: (id) => api.patch(`/listings/${id}/vr`), // no file = remove
 };
 
+
 export const reviewAPI = {
   getAll:  (listingId)           => api.get(`/listings/${listingId}/reviews`),
   create:  (listingId, formData) => api.post(`/listings/${listingId}/reviews`, formData, {
