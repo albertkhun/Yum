@@ -7,15 +7,11 @@ const path = require('path');
 dotenv.config();
 
 const app = express();
+const corsOptions = require("./config/corsConfig");
 
-app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "https://yumrental2026.onrender.com"
-  ],
-  
-  credentials: true,
-}));
+app.use(cors(corsOptions));
+
+module.exports = corsOptions;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
