@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, UserPlus, Home } from 'lucide-react';
 import { useAuth }      from '../../context/AuthContext';
-import GoogleButton     from '../../components/common/GoogleButton';
+import GoogleButton     from '../../components/common/Googlebutton';
 import toast from 'react-hot-toast';
 
 export default function RegisterPage() {
