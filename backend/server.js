@@ -7,11 +7,13 @@ const path = require('path');
 dotenv.config();
 
 const app = express();
+
+//import CORS config
 const corsOptions = require("./config/corsConfig");
 
+//apply CORS FIRST
 app.use(cors(corsOptions));
 
-module.exports = corsOptions;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
