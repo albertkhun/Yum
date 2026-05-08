@@ -1,116 +1,113 @@
 import { useEffect, useRef, useState } from 'react';
 import { MapPin, Navigation, X } from 'lucide-react';
 
-// ── Leaflet loaded from CDN via useEffect (no npm install needed) ──
-// Default center: Imphal, Manipur
-const DEFAULT_LAT = 24.817;
-const DEFAULT_LNG = 93.9368;
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
+
+const MAPBOX_STYLE = 'mapbox://styles/mapbox/streets-v12';
+
+const DEFAULT_LAT  = 24.817;
+const DEFAULT_LNG  = 93.9368;
 const DEFAULT_ZOOM = 13;
 
 export default function MapPicker({ lat, lng, onChange, readOnly = false }) {
-  const mapRef      = useRef(null);   // leaflet map instance
-  const markerRef   = useRef(null);   // leaflet marker instance
-  const containerRef = useRef(null);  // DOM div
+  const containerRef = useRef(null);
+  const mapRef       = useRef(null);
+  const markerRef    = useRef(null);
   const [loaded,  setLoaded]  = useState(false);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(false);
 
-  // Inject Leaflet CSS + JS once
   useEffect(() => {
-    if (document.getElementById('leaflet-css')) { setLoaded(true); setLoading(false); return; }
-
-    const link = document.createElement('link');
-    link.id   = 'leaflet-css';
-    link.rel  = 'stylesheet';
-    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-    document.head.appendChild(link);
-
+    if (window.mapboxgl) { setLoaded(true); setLoading(false); return; }
+    if (!document.getElementById('mapbox-css')) {
+      const link = document.createElement('link');
+      link.id = 'mapbox-css'; link.rel = 'stylesheet';
+      link.href = 'https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css';
+      document.head.appendChild(link);
+    }
     const script = document.createElement('script');
-    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    script.onload = () => { setLoaded(true); setLoading(false); };
-    script.onerror = () => { setError(true); setLoading(false); };
+    script.src = 'https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js';
+    script.onload  = () => { setLoaded(true);  setLoading(false); };
+    script.onerror = () => { setError(true);   setLoading(false); };
     document.head.appendChild(script);
   }, []);
 
-  // Init map once Leaflet is loaded
   useEffect(() => {
-  if (!loaded || !containerRef.current || mapRef.current) return;
+    if (!loaded || !containerRef.current || mapRef.current) return;
+    const mapboxgl = window.mapboxgl;
+    mapboxgl.accessToken = MAPBOX_TOKEN;
 
-  if (!window.L) return; // ✅ safety
-    // ✅ FIX: prevent undefined crash
+    const initLat = lat ?? DEFAULT_LAT;
+    const initLng = lng ?? DEFAULT_LNG;
 
-    const L = window.L;
-    const initLat = lat || DEFAULT_LAT;
-    const initLng = lng || DEFAULT_LNG;
-
-    const map = L.map(containerRef.current, { zoomControl: true }).setView([initLat, initLng], DEFAULT_ZOOM);
-    mapRef.current = map;
-
-    // OpenStreetMap tiles — completely free, no key needed
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      maxZoom: 19,
-    }).addTo(map);
-
-    // Custom orange marker icon
-    const icon = L.divIcon({
-      html: `<div style="background:#e85d04;width:28px;height:28px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3)"></div>`,
-      iconSize: [28, 28],
-      iconAnchor: [14, 28],
-      className: '',
+    const map = new mapboxgl.Map({
+      container: containerRef.current,
+      style:     MAPBOX_STYLE,
+      center:    [initLng, initLat],
+      zoom:      DEFAULT_ZOOM,
     });
+    mapRef.current = map;
+    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
 
-    // Place marker if coords exist
+    const MARKER_SVG = encodeURIComponent(
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 34"><path d="M14 0C6.27 0 0 6.27 0 14c0 9.33 14 20 14 20s14-10.67 14-20C28 6.27 21.73 0 14 0z" fill="#e85d04"/><circle cx="14" cy="14" r="6" fill="white"/></svg>`
+    );
+
+    const makeEl = () => {
+      const el = document.createElement('div');
+      el.style.cssText = `width:28px;height:34px;cursor:${readOnly ? 'default' : 'grab'};background:url("data:image/svg+xml,${MARKER_SVG}") no-repeat center/contain;`;
+      return el;
+    };
+
     if (lat != null && lng != null) {
-      markerRef.current = L.marker([lat, lng], { icon, draggable: !readOnly }).addTo(map);
+      markerRef.current = new mapboxgl.Marker({ element: makeEl(), draggable: !readOnly })
+        .setLngLat([lng, lat]).addTo(map);
       if (!readOnly) {
-        markerRef.current.on('dragend', (e) => {
-          const pos = e.target.getLatLng();
+        markerRef.current.on('dragend', () => {
+          const pos = markerRef.current.getLngLat();
           onChange?.({ lat: parseFloat(pos.lat.toFixed(6)), lng: parseFloat(pos.lng.toFixed(6)) });
         });
       }
     }
 
-    // Click to place/move marker (owner mode)
     if (!readOnly) {
       map.on('click', (e) => {
-        const { lat: cLat, lng: cLng } = e.latlng;
+        const { lng: cLng, lat: cLat } = e.lngLat;
         const rounded = { lat: parseFloat(cLat.toFixed(6)), lng: parseFloat(cLng.toFixed(6)) };
-
         if (markerRef.current) {
-          markerRef.current.setLatLng([rounded.lat, rounded.lng]);
+          markerRef.current.setLngLat([rounded.lng, rounded.lat]);
         } else {
-          markerRef.current = L.marker([rounded.lat, rounded.lng], { icon, draggable: true }).addTo(map);
-          markerRef.current.on('dragend', (ev) => {
-            const pos = ev.target.getLatLng();
+          markerRef.current = new mapboxgl.Marker({ element: makeEl(), draggable: true })
+            .setLngLat([rounded.lng, rounded.lat]).addTo(map);
+          markerRef.current.on('dragend', () => {
+            const pos = markerRef.current.getLngLat();
             onChange?.({ lat: parseFloat(pos.lat.toFixed(6)), lng: parseFloat(pos.lng.toFixed(6)) });
           });
         }
         onChange?.(rounded);
       });
+      map.getCanvas().style.cursor = 'crosshair';
     }
-
-    // Fix map size after render
-    setTimeout(() => map.invalidateSize(), 100);
 
     return () => { map.remove(); mapRef.current = null; markerRef.current = null; };
   }, [loaded]);
 
-  // Sync external lat/lng changes (e.g., clear)
   useEffect(() => {
-    if (!mapRef.current) return;
-    const L = window.L;
-    if (lat && lng) {
+    if (!mapRef.current || !loaded) return;
+    const mapboxgl = window.mapboxgl;
+    const MARKER_SVG = encodeURIComponent(
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 34"><path d="M14 0C6.27 0 0 6.27 0 14c0 9.33 14 20 14 20s14-10.67 14-20C28 6.27 21.73 0 14 0z" fill="#e85d04"/><circle cx="14" cy="14" r="6" fill="white"/></svg>`
+    );
+    if (lat != null && lng != null) {
       if (markerRef.current) {
-        markerRef.current.setLatLng([lat, lng]);
+        markerRef.current.setLngLat([lng, lat]);
       } else {
-        const icon = L.divIcon({
-          html: `<div style="background:#e85d04;width:28px;height:28px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3)"></div>`,
-          iconSize: [28, 28], iconAnchor: [14, 28], className: '',
-        });
-        markerRef.current = L.marker([lat, lng], { icon, draggable: !readOnly }).addTo(mapRef.current);
+        const el = document.createElement('div');
+        el.style.cssText = `width:28px;height:34px;background:url("data:image/svg+xml,${MARKER_SVG}") no-repeat center/contain;`;
+        markerRef.current = new mapboxgl.Marker({ element: el, draggable: !readOnly })
+          .setLngLat([lng, lat]).addTo(mapRef.current);
       }
-      mapRef.current.setView([lat, lng], mapRef.current.getZoom());
+      mapRef.current.flyTo({ center: [lng, lat], zoom: mapRef.current.getZoom() });
     } else if (markerRef.current) {
       markerRef.current.remove();
       markerRef.current = null;
@@ -122,7 +119,7 @@ export default function MapPicker({ lat, lng, onChange, readOnly = false }) {
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
         const pos = { lat: parseFloat(coords.latitude.toFixed(6)), lng: parseFloat(coords.longitude.toFixed(6)) };
-        mapRef.current?.setView([pos.lat, pos.lng], 16);
+        mapRef.current?.flyTo({ center: [pos.lng, pos.lat], zoom: 16 });
         onChange?.(pos);
       },
       () => {},
@@ -138,7 +135,6 @@ export default function MapPicker({ lat, lng, onChange, readOnly = false }) {
 
   return (
     <div className="space-y-2">
-      {/* Map container */}
       <div className="relative rounded-2xl overflow-hidden border-2 border-gray-200 focus-within:border-brand transition-colors"
            style={{ height: readOnly ? '280px' : '320px' }}>
         {loading && (
@@ -147,8 +143,6 @@ export default function MapPicker({ lat, lng, onChange, readOnly = false }) {
           </div>
         )}
         <div ref={containerRef} className="w-full h-full z-0" />
-
-        {/* Locate me button (owner mode) */}
         {!readOnly && loaded && (
           <button type="button" onClick={locateMe}
             className="absolute bottom-3 right-3 z-[1000] bg-white text-brand
@@ -160,7 +154,6 @@ export default function MapPicker({ lat, lng, onChange, readOnly = false }) {
         )}
       </div>
 
-      {/* Coordinate display + clear */}
       {!readOnly && (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -178,7 +171,6 @@ export default function MapPicker({ lat, lng, onChange, readOnly = false }) {
         </div>
       )}
 
-      {/* Read-only: open in Google Maps */}
       {readOnly && lat && lng && (
         <a href={`https://www.google.com/maps?q=${lat},${lng}`}
            target="_blank" rel="noopener noreferrer"

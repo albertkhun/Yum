@@ -13,6 +13,7 @@ import ChangePasswordPage  from './pages/ChangePasswordPage';
 import SettingsPage        from './pages/SettingsPage';
 import ListingsPage        from './pages/listings/ListingsPage';
 import ListingDetail       from './pages/listings/ListingDetail';
+import WriteReviewPage     from './pages/listings/WriteReviewPage';
 import OwnerDashboard      from './pages/owner/OwnerDashboard';
 import CreateListing       from './pages/owner/CreateListing';
 import EditListing         from './pages/owner/EditListing';
@@ -59,6 +60,7 @@ const AppShell = () => (
         <Route path="/"               element={<HomePage />} />
         <Route path="/listings"       element={<ListingsPage />} />
         <Route path="/listings/:id"   element={<ListingDetail />} />
+        <Route path="/listings/:id/review" element={<WriteReviewPage />} />
 
         {/* Auth */}
         <Route path="/login"          element={<LoginPage />} />
