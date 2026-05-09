@@ -1,24 +1,22 @@
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, IndianRupee, Star } from 'lucide-react';
-import { getImageUrl, truncate, getCategoryColor } from '../../utils/helpers';
+import { getCardImageUrl, getThumbImageUrl, truncate, getCategoryColor } from '../../utils/helpers';
 
-// Always renders 5 stars, filled proportionally to avgRating
-function StarRow({ avg, count }) {
+//OPTIMIZATION: memo() wraps the entire card component.
+
+// Fractional star row — memoized separately since it's purely presentational
+const StarRow = memo(function StarRow({ avg, count }) {
   return (
     <div className="flex items-center gap-1">
       <div className="flex items-center gap-0.5">
         {[1, 2, 3, 4, 5].map((n) => {
-          const fill = Math.min(1, Math.max(0, (avg ?? 0) - (n - 1))); // 0, partial, or 1
+          const fill = Math.min(1, Math.max(0, (avg ?? 0) - (n - 1)));
           const pct  = Math.round(fill * 100);
           return (
             <span key={n} className="relative inline-block w-3.5 h-3.5">
-              {/* Empty star (background) */}
               <Star size={14} className="absolute inset-0 text-gray-300 fill-gray-300" />
-              {/* Filled star clipped to fill% */}
-              <span
-                className="absolute inset-0 overflow-hidden"
-                style={{ width: `${pct}%` }}
-              >
+              <span className="absolute inset-0 overflow-hidden" style={{ width: `${pct}%` }}>
                 <Star size={14} className="text-amber-400 fill-amber-400" />
               </span>
             </span>
@@ -35,25 +33,40 @@ function StarRow({ avg, count }) {
       )}
     </div>
   );
-}
+});
 
-export default function ListingCard({ listing }) {
-  const { _id, title, category, price, location, images, status, facilities, avgRating, reviewCount, vrMediaUrl } = listing;
+const PLACEHOLDER = (category) =>
+  `https://placehold.co/600x450/f97316/white?text=${encodeURIComponent(category)}`;
+
+const ListingCard = memo(function ListingCard({ listing }) {
+  const {
+    _id, title, category, price, location,
+    images, status, facilities, avgRating,
+    reviewCount, vrMediaUrl,
+  } = listing;
+
+  const imgSrc = images?.[0]
+    ? getCardImageUrl(images[0])   // Cloudinary: 600×450 WebP, q_auto
+    : PLACEHOLDER(category);
+
   return (
     <Link to={`/listings/${_id}`} className="card group block">
       <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
         <img
-          src={images?.[0] ? getImageUrl(images[0]) : `https://placehold.co/400x300/f97316/white?text=${encodeURIComponent(category)}`}
+          src={imgSrc}
           alt={title}
+          loading="lazy"
+          decoding="async"
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          onError={(e) => { e.target.src = `https://placehold.co/400x300/f97316/white?text=${encodeURIComponent(category)}`; }}
+          onError={(e) => { e.target.src = PLACEHOLDER(category); }}
         />
         <div className="absolute top-3 left-3 flex flex-col gap-1.5">
           <span className={`badge text-xs font-semibold ${status === 'available' ? 'badge-green' : 'badge-red'}`}>
             {status === 'available' ? '● Available' : '● Rented'}
           </span>
           {vrMediaUrl && (
-            <span className="badge text-xs font-semibold" style={{background:'rgba(0,0,0,0.65)',color:'#fff',backdropFilter:'blur(4px)'}}>
+            <span className="badge text-xs font-semibold"
+              style={{ background: 'rgba(0,0,0,0.65)', color: '#fff', backdropFilter: 'blur(4px)' }}>
               🥽 VR Tour
             </span>
           )}
@@ -73,7 +86,6 @@ export default function ListingCard({ listing }) {
           {truncate(title, 55)}
         </h3>
 
-        {/* Star rating — only shown when reviews exist */}
         {avgRating && (
           <div className="mb-2">
             <StarRow avg={avgRating} count={reviewCount ?? 0} />
@@ -88,10 +100,14 @@ export default function ListingCard({ listing }) {
         {facilities?.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-3">
             {facilities.slice(0, 3).map((f) => (
-              <span key={f} className="text-[10px] sm:text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{f}</span>
+              <span key={f} className="text-[10px] sm:text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                {f}
+              </span>
             ))}
             {facilities.length > 3 && (
-              <span className="text-[10px] sm:text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">+{facilities.length - 3} more</span>
+              <span className="text-[10px] sm:text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                +{facilities.length - 3} more
+              </span>
             )}
           </div>
         )}
@@ -109,4 +125,6 @@ export default function ListingCard({ listing }) {
       </div>
     </Link>
   );
-}
+});
+
+export default ListingCard;
