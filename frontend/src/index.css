@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&family=Sora:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&family=Sora:wght@600;700;800&family=Outfit:wght@700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -70,4 +70,158 @@
 @layer utilities {
   .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
   .scrollbar-hide::-webkit-scrollbar { display: none; }
+}
+
+/* â”€â”€ YumVR Brand Identity â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+
+/* Navbar logo wrapper */
+.yumvr-logo-wrap {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #fff;
+  border: 1.5px solid rgba(232, 93, 4, 0.15);
+  box-shadow: 0 2px 8px rgba(232, 93, 4, 0.18);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.yumvr-nav-brand:hover .yumvr-logo-wrap {
+  box-shadow: 0 4px 16px rgba(232, 93, 4, 0.35);
+  transform: scale(1.05);
+}
+
+.yumvr-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* Brand text */
+.yumvr-brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.yumvr-name {
+  font-family: 'Outfit', 'Sora', sans-serif;
+  font-weight: 800;
+  font-size: 1.2rem;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+@media (min-width: 640px) {
+  .yumvr-name { font-size: 1.35rem; }
+}
+
+.yumvr-yum {
+  color: #1a1a1a;
+  transition: color 0.2s ease;
+}
+
+.group:hover .yumvr-yum {
+  color: #111;
+}
+
+.yumvr-vr {
+  background: linear-gradient(135deg, #e85d04 0%, #fb923c 60%, #f59e0b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+.yumvr-tagline {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  margin-top: 1px;
+}
+
+/* Footer logo */
+.yumvr-footer-logo-wrap {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(232, 93, 4, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.yumvr-footer-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.yumvr-footer-name {
+  font-family: 'Outfit', 'Sora', sans-serif;
+  font-weight: 800;
+  font-size: 1.2rem;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.yumvr-footer-yum {
+  color: #ffffff;
+}
+
+.yumvr-footer-vr {
+  background: linear-gradient(135deg, #fb923c, #f59e0b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Auth pages logo (login/register) */
+.yumvr-auth-logo-wrap {
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: 0 6px 24px rgba(232, 93, 4, 0.28);
+  margin: 0 auto 10px;
+  background: #fff;
+}
+
+.yumvr-auth-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.yumvr-auth-name {
+  font-family: 'Outfit', 'Sora', sans-serif;
+  font-weight: 800;
+  font-size: 1.6rem;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.yumvr-auth-yum { color: #1a1a1a; }
+
+.yumvr-auth-vr {
+  background: linear-gradient(135deg, #e85d04 0%, #fb923c 60%, #f59e0b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 900;
 }

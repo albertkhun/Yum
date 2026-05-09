@@ -165,7 +165,7 @@ export default function HomePage() {
       <section className="bg-gray-50 py-12 sm:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
-            <h2 className="section-title mb-2">Why Yum?</h2>
+            <h2 className="section-title mb-2">Why YumVR?</h2>
             <p className="text-gray-500 text-sm sm:text-base">Built for the people of Manipur</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">

@@ -48,7 +48,5 @@ export const CATEGORIES = [
 ];
 
 export const FACILITIES = [
-  'WiFi', 'Parking', 'Water', 'Electricity', 'Furnished',
-  'AC', 'Security', 'CCTV', 'Kitchen', 'Bathroom attached',
-  'Balcony', 'Garden', 'Lift', 'Generator backup',
+  'WiFi', 'Parking', 'Water', 'Electricity', 'Study Table', 'Security', 'Kitchen', 'Bathroom attached',
 ];

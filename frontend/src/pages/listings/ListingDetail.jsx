@@ -16,7 +16,7 @@ import toast from 'react-hot-toast';
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
 const MAP_STYLES = [
-  { id: 'streets',   label: 'Streets',   url: 'mapbox://styles/mapbox/streets-v12' },
+  { id: 'streets',   label: 'Streets',   url: 'mapbox://styles/mapbox/navigation-day-v1' },
   { id: 'satellite', label: 'Satellite', url: 'mapbox://styles/mapbox/satellite-streets-v12' },
   { id: 'outdoors',  label: 'Outdoors',  url: 'mapbox://styles/mapbox/outdoors-v12' },
   { id: 'dark',      label: 'Dark',      url: 'mapbox://styles/mapbox/dark-v11' },
