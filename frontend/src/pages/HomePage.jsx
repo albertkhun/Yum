@@ -22,41 +22,77 @@ const WHY = [
 
 function ListingsCarousel({ listings, loading }) {
   const scrollRef = useRef(null);
-  const [canScrollLeft,  setCanScrollLeft]  = useState(false);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
   const updateScrollState = () => {
     const el = scrollRef.current;
+
     if (!el) return;
+
     setCanScrollLeft(el.scrollLeft > 8);
-    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 8);
+
+    setCanScrollRight(
+      el.scrollLeft + el.clientWidth < el.scrollWidth - 8
+    );
   };
 
   useEffect(() => {
     const el = scrollRef.current;
+
     if (!el) return;
-    el.addEventListener('scroll', updateScrollState, { passive: true });
+
+    el.addEventListener("scroll", updateScrollState, {
+      passive: true,
+    });
+
     updateScrollState();
-    return () => el.removeEventListener('scroll', updateScrollState);
+
+    return () => {
+      el.removeEventListener("scroll", updateScrollState);
+    };
   }, [listings]);
 
   const scroll = (dir) => {
     const el = scrollRef.current;
+
     if (!el) return;
-    const cardWidth = el.querySelector('[data-card]')?.offsetWidth || 280;
-    el.scrollBy({ left: dir * (cardWidth + 16), behavior: 'smooth' });
+
+    const cardWidth =
+      el.querySelector("[data-card]")?.offsetWidth || 300;
+
+    el.scrollBy({
+      left: dir * (cardWidth + 16),
+      behavior: "smooth",
+    });
   };
 
+  // LOADING
   if (loading) {
     return (
-      <div className="flex gap-4 overflow-hidden pb-2">
+      <div className="flex gap-4 overflow-hidden px-4 pb-4">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="card animate-pulse shrink-0 w-[260px] sm:w-[300px]">
-            <div className="aspect-[4/3] bg-gray-200" />
-            <div className="p-4 space-y-3">
-              <div className="h-4 bg-gray-200 rounded w-3/4" />
-              <div className="h-3 bg-gray-200 rounded w-1/2" />
-              <div className="h-3 bg-gray-200 rounded w-1/3" />
+          <div
+            key={i}
+            className="
+              shrink-0
+              w-[82%]
+              sm:w-[300px]
+              md:w-[320px]
+              lg:w-[280px]
+              xl:w-[260px]
+            "
+          >
+            <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm animate-pulse">
+              <div className="aspect-[4/3] bg-gray-200" />
+
+              <div className="p-4 space-y-3">
+                <div className="h-5 w-3/4 rounded bg-gray-200" />
+
+                <div className="h-4 w-1/2 rounded bg-gray-200" />
+
+                <div className="h-4 w-1/3 rounded bg-gray-200" />
+              </div>
             </div>
           </div>
         ))}
@@ -64,10 +100,12 @@ function ListingsCarousel({ listings, loading }) {
     );
   }
 
+  // EMPTY
   if (listings.length === 0) {
     return (
-      <div className="text-center py-16 text-gray-400">
+      <div className="py-16 text-center text-gray-400">
         <Home size={40} className="mx-auto mb-3 opacity-40" />
+
         <p>No listings yet. Be the first to post!</p>
       </div>
     );
@@ -75,46 +113,98 @@ function ListingsCarousel({ listings, loading }) {
 
   return (
     <div className="relative group/carousel">
+      {/* LEFT BUTTON */}
       {canScrollLeft && (
         <button
           onClick={() => scroll(-1)}
-          className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 z-10
-                     w-9 h-9 bg-white border border-gray-200 rounded-full shadow-md
-                     flex items-center justify-center text-gray-600
-                     hover:border-brand hover:text-brand transition-all
-                     opacity-0 group-hover/carousel:opacity-100"
           aria-label="Scroll left"
+          className="
+            hidden md:flex
+            absolute left-2 top-1/2 z-20
+            -translate-y-1/2
+            h-10 w-10
+            items-center justify-center
+            rounded-full
+            border border-gray-200
+            bg-white/95
+            text-gray-700
+            shadow-lg
+            backdrop-blur
+            transition-all
+            hover:scale-105
+            hover:border-orange-400
+            hover:text-orange-500
+            opacity-0 group-hover/carousel:opacity-100
+          "
         >
           <ChevronLeft size={18} />
         </button>
       )}
 
+      {/* CAROUSEL */}
       <div
         ref={scrollRef}
-        className="flex gap-4 overflow-x-auto scroll-smooth pb-3 -mx-1 px-1 hide-scrollbar"
-        style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' }}
+        className="
+          flex
+          gap-4
+          overflow-x-auto
+          scroll-smooth
+          px-4
+          pb-4
+          hide-scrollbar
+        "
+        style={{
+          scrollSnapType: "x mandatory",
+          WebkitOverflowScrolling: "touch",
+        }}
       >
         {listings.map((listing) => (
           <div
             key={listing._id}
             data-card
-            className="shrink-0 w-[42%] sm:w-[260px] lg:w-[calc(16.66%-14px)]"
-            style={{ scrollSnapAlign: 'start' }}
+            className="
+              shrink-0
+              w-[82%]
+              sm:w-[300px]
+              md:w-[320px]
+              lg:w-[280px]
+              xl:w-[260px]
+            "
+            style={{
+              scrollSnapAlign: "start",
+              minWidth: "280px",
+            }}
           >
-            <ListingCard listing={listing} />
+            <div className="h-full overflow-hidden rounded-2xl">
+              <ListingCard listing={listing} />
+            </div>
           </div>
         ))}
       </div>
 
+      {/* RIGHT BUTTON */}
       {canScrollRight && (
         <button
           onClick={() => scroll(1)}
-          className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 z-10
-                     w-9 h-9 bg-white border border-gray-200 rounded-full shadow-md
-                     flex items-center justify-center text-gray-600
-                     hover:border-brand hover:text-brand transition-all
-                     opacity-0 group-hover/carousel:opacity-100"
           aria-label="Scroll right"
+          className="
+            hidden md:flex
+            absolute right-2 top-1/2 z-20
+            -translate-y-1/2
+            h-10 w-10
+            items-center justify-center
+            rounded-full
+            border border-gray-200
+            bg-white/95
+            text-gray-700
+            shadow-lg
+            backdrop-blur
+            transition-all
+            hover:scale-105
+            hover:border-orange-400
+            hover:text-orange-500
+            opacity-0 group-hover/carousel:opacity-100
+          "
         >
           <ChevronRight size={18} />
         </button>
