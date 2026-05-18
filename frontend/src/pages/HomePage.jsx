@@ -1,24 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Home, Building2, Store, TreePine, MapPin, Shield, Zap, Heart } from 'lucide-react';
+import { ArrowRight, Home, Building2, Store, TreePine, MapPin, Shield, Zap, Heart, ChevronLeft, ChevronRight } from 'lucide-react';
 import SearchBar   from '../components/common/SearchBar';
 import ListingCard from '../components/common/ListingCard';
 import { listingAPI } from '../services/api';
 
 const CATEGORIES = [
   { name: 'Rent',      icon: Home,      color: 'bg-blue-50 text-blue-600' },
-  { name: 'Hostel', icon: Building2, color: 'bg-purple-50 text-purple-600' },
-  { name: 'PG',     icon: Home,      color: 'bg-green-50 text-green-600' },
-  { name: 'Aparment',    icon: Building2, color: 'bg-yellow-50 text-yellow-700' },
-  { name: 'to-let',      icon: Store,     color: 'bg-pink-50 text-pink-600' },
-  { name: 'Lodge',      icon: TreePine,  color: 'bg-teal-50 text-teal-600' },
-];
-
-const STATS = [
-  { value: '30+', label: 'Active Listings' },
-  { value: '16',   label: 'Districts Covered' },
-  { value: '20+', label: 'Happy Tenants' },
-  { value: '10+', label: 'Verified Owners' },
+  { name: 'Hostel',    icon: Building2, color: 'bg-purple-50 text-purple-600' },
+  { name: 'PG',        icon: Home,      color: 'bg-green-50 text-green-600' },
+  { name: 'Apartment', icon: Building2, color: 'bg-yellow-50 text-yellow-700' },
+  { name: 'Tolet',     icon: Store,     color: 'bg-pink-50 text-pink-600' },
+  { name: 'Lodge',     icon: TreePine,  color: 'bg-teal-50 text-teal-600' },
 ];
 
 const WHY = [
@@ -27,34 +20,138 @@ const WHY = [
   { icon: Heart,  title: 'Local First',       desc: 'Built specifically for Manipur with all 16 districts covered.', color: 'bg-red-50 text-red-500' },
 ];
 
+function ListingsCarousel({ listings, loading }) {
+  const scrollRef = useRef(null);
+  const [canScrollLeft,  setCanScrollLeft]  = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const updateScrollState = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 8);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 8);
+  };
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', updateScrollState, { passive: true });
+    updateScrollState();
+    return () => el.removeEventListener('scroll', updateScrollState);
+  }, [listings]);
+
+  const scroll = (dir) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const cardWidth = el.querySelector('[data-card]')?.offsetWidth || 280;
+    el.scrollBy({ left: dir * (cardWidth + 16), behavior: 'smooth' });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex gap-4 overflow-hidden pb-2">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="card animate-pulse shrink-0 w-[260px] sm:w-[300px]">
+            <div className="aspect-[4/3] bg-gray-200" />
+            <div className="p-4 space-y-3">
+              <div className="h-4 bg-gray-200 rounded w-3/4" />
+              <div className="h-3 bg-gray-200 rounded w-1/2" />
+              <div className="h-3 bg-gray-200 rounded w-1/3" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (listings.length === 0) {
+    return (
+      <div className="text-center py-16 text-gray-400">
+        <Home size={40} className="mx-auto mb-3 opacity-40" />
+        <p>No listings yet. Be the first to post!</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative group/carousel">
+      {canScrollLeft && (
+        <button
+          onClick={() => scroll(-1)}
+          className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 z-10
+                     w-9 h-9 bg-white border border-gray-200 rounded-full shadow-md
+                     flex items-center justify-center text-gray-600
+                     hover:border-brand hover:text-brand transition-all
+                     opacity-0 group-hover/carousel:opacity-100"
+          aria-label="Scroll left"
+        >
+          <ChevronLeft size={18} />
+        </button>
+      )}
+
+      <div
+        ref={scrollRef}
+        className="flex gap-4 overflow-x-auto scroll-smooth pb-3 -mx-1 px-1 hide-scrollbar"
+        style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' }}
+      >
+        {listings.map((listing) => (
+          <div
+            key={listing._id}
+            data-card
+            className="shrink-0 w-[42%] sm:w-[260px] lg:w-[calc(16.66%-14px)]"
+            style={{ scrollSnapAlign: 'start' }}
+          >
+            <ListingCard listing={listing} />
+          </div>
+        ))}
+      </div>
+
+      {canScrollRight && (
+        <button
+          onClick={() => scroll(1)}
+          className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 z-10
+                     w-9 h-9 bg-white border border-gray-200 rounded-full shadow-md
+                     flex items-center justify-center text-gray-600
+                     hover:border-brand hover:text-brand transition-all
+                     opacity-0 group-hover/carousel:opacity-100"
+          aria-label="Scroll right"
+        >
+          <ChevronRight size={18} />
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function HomePage() {
   const [featured, setFeatured] = useState([]);
   const [loading,  setLoading]  = useState(true);
-  const [stats, setStats] = useState(null);
+  const [stats,    setStats]    = useState(null);
 
   useEffect(() => {
-  const fetchData = async () => {
-    try {
-      const [listingRes, statsRes] = await Promise.all([
-        listingAPI.getAll({ limit: 6 }),
-        listingAPI.getPublicStats()
-      ]);
-
-      setFeatured(listingRes.data.listings || []);
-      setStats(statsRes.data.stats); 
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  fetchData();
-}, []);
+    const controller = new AbortController();
+    const fetchData = async () => {
+      try {
+        const [listingRes, statsRes] = await Promise.all([
+          listingAPI.getAll({ limit: 6 }),
+          listingAPI.getPublicStats(),
+        ]);
+        if (!controller.signal.aborted) {
+          setFeatured(listingRes.data.listings || []);
+          setStats(statsRes.data.stats);
+        }
+      } catch (err) {
+        if (!controller.signal.aborted) console.error(err);
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    };
+    fetchData();
+    return () => controller.abort();
+  }, []);
 
   return (
     <div>
-      {/* HERO */}
       <section className="relative overflow-hidden bg-gradient-to-br from-orange-600 via-orange-500 to-amber-400">
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: `radial-gradient(circle at 25% 25%, white 2px, transparent 2px), radial-gradient(circle at 75% 75%, white 2px, transparent 2px)`, backgroundSize: '60px 60px' }} />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-28">
@@ -79,19 +176,18 @@ export default function HomePage() {
           </svg>
         </div>
       </section>
-      
-      {/* STATS */}
+
       <section className="bg-gray-50 py-8 sm:py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {[
-              { label: 'Active Listings',   value: stats?.activeListings || 0 },
-              { label: 'Districts Covered', value: stats?.activeDistricts || 0 },
-              { label: 'Active Users',     value: stats?.tenantCount || 0 },
-              { label: 'Verified Owners',   value: stats?.ownerCount || 0 },
+              { label: 'Active Listings',   value: stats?.activeListings },
+              { label: 'Districts Covered', value: stats?.activeDistricts },
+              { label: 'Active Users',      value: stats?.tenantCount },
+              { label: 'Verified Owners',   value: stats?.ownerCount },
             ].map(({ label, value }) => (
               <div key={label} className="text-center bg-white rounded-2xl p-4 sm:p-6 border border-gray-100 shadow-sm">
-                {value === null ? (
+                {value === undefined || value === null ? (
                   <div className="h-8 w-16 bg-gray-200 rounded-lg animate-pulse mx-auto mb-1" />
                 ) : (
                   <p className="font-display font-bold text-2xl sm:text-3xl text-brand">{value}</p>
@@ -103,7 +199,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CATEGORIES */}
       <section className="page-wrapper">
         <div className="text-center mb-8">
           <h2 className="section-title mb-2">Browse by Category</h2>
@@ -122,7 +217,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* FEATURED */}
       <section className="page-wrapper pt-0">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -133,35 +227,14 @@ export default function HomePage() {
             View all <ArrowRight size={16} />
           </Link>
         </div>
-        {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="card animate-pulse">
-                <div className="aspect-[4/3] bg-gray-200" />
-                <div className="p-4 space-y-3">
-                  <div className="h-4 bg-gray-200 rounded w-3/4" />
-                  <div className="h-3 bg-gray-200 rounded w-1/2" />
-                  <div className="h-3 bg-gray-200 rounded w-1/3" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : featured.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {featured.map((listing) => <ListingCard key={listing._id} listing={listing} />)}
-          </div>
-        ) : (
-          <div className="text-center py-16 text-gray-400">
-            <Home size={40} className="mx-auto mb-3 opacity-40" />
-            <p>No listings yet. Be the first to post!</p>
-          </div>
-        )}
+
+        <ListingsCarousel listings={featured} loading={loading} />
+
         <div className="text-center mt-8">
           <Link to="/listings" className="btn-secondary inline-flex items-center gap-2">Browse All Listings <ArrowRight size={17} /></Link>
         </div>
       </section>
 
-      {/* WHY US */}
       <section className="bg-gray-50 py-12 sm:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
@@ -180,7 +253,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA */}
       <section className="page-wrapper">
         <div className="bg-gradient-to-r from-orange-500 to-amber-400 rounded-3xl p-8 sm:p-12 text-center text-white overflow-hidden relative">
           <div className="absolute inset-0 opacity-10" style={{ backgroundImage: `radial-gradient(circle at 80% 20%, white 2px, transparent 2px)`, backgroundSize: '40px 40px' }} />

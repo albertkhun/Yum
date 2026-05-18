@@ -3,9 +3,7 @@ import { Link } from 'react-router-dom';
 import { MapPin, IndianRupee, Star } from 'lucide-react';
 import { getCardImageUrl, getThumbImageUrl, truncate, getCategoryColor } from '../../utils/helpers';
 
-//OPTIMIZATION: memo() wraps the entire card component.
 
-// Fractional star row — memoized separately since it's purely presentational
 const StarRow = memo(function StarRow({ avg, count }) {
   return (
     <div className="flex items-center gap-1">
@@ -23,15 +21,13 @@ const StarRow = memo(function StarRow({ avg, count }) {
           );
         })}
       </div>
-      {avg ? (
+      {count > 0 && avg ? (
         <span className="text-[11px] font-semibold text-gray-600 leading-none">
           {avg}
-          {count > 0 && <span className="font-normal text-gray-400"> ({count})</span>}
+        <span className="font-normal text-gray-400"> ({count})</span>
         </span>
-      ) : (
-        <span className="text-[11px] text-gray-400 leading-none">No reviews</span>
-      )}
-    </div>
+          ) : null}
+      </div>
   );
 });
 
@@ -50,8 +46,8 @@ const ListingCard = memo(function ListingCard({ listing }) {
     : PLACEHOLDER(category);
 
   return (
-    <Link to={`/listings/${_id}`} className="card group block">
-      <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
+    <Link to={`/listings/${_id}`} className="card group flex flex-col h-full">
+      <div className="relative aspect-[4/3] overflow-hidden bg-gray-100 shrink-0">
         <img
           src={imgSrc}
           alt={title}
@@ -81,38 +77,40 @@ const ListingCard = memo(function ListingCard({ listing }) {
         )}
       </div>
 
-      <div className="p-4">
+      <div className="p-4 flex flex-col flex-1">
         <h3 className="font-display font-semibold text-gray-900 text-sm sm:text-base leading-snug mb-1.5 group-hover:text-brand transition-colors">
           {truncate(title, 55)}
         </h3>
 
-        {avgRating && (
-          <div className="mb-2">
-            <StarRow avg={avgRating} count={reviewCount ?? 0} />
-          </div>
-        )}
+        {/* Star row — always rendered so height is consistent */}
+        <div className="mb-2 min-h-[18px]">
+  {(reviewCount ?? 0) > 0 ? (
+    <StarRow avg={avgRating} count={reviewCount ?? 0} />
+  ) : (
+    <span className="text-[11px] text-gray-400">No reviews yet</span>
+  )}
+</div>
 
         <div className="flex items-center gap-1.5 text-xs sm:text-sm text-gray-500 mb-3">
           <MapPin size={13} className="text-brand shrink-0" />
           <span className="truncate">{location?.locality}, {location?.district}</span>
         </div>
 
-        {facilities?.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-3">
-            {facilities.slice(0, 3).map((f) => (
-              <span key={f} className="text-[10px] sm:text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                {f}
-              </span>
-            ))}
-            {facilities.length > 3 && (
-              <span className="text-[10px] sm:text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
-                +{facilities.length - 3} more
-              </span>
-            )}
-          </div>
-        )}
+        {/* Facilities — always rendered, min-height keeps row consistent */}
+        <div className="flex flex-wrap gap-1.5 mb-3 min-h-[26px] content-start">
+          {facilities?.slice(0, 3).map((f) => (
+            <span key={f} className="text-[10px] sm:text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+              {f}
+            </span>
+          ))}
+          {facilities?.length > 3 && (
+            <span className="text-[10px] sm:text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+              +{facilities.length - 3} more
+            </span>
+          )}
+        </div>
 
-        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+        <div className="flex items-center justify-between pt-3 border-t border-gray-100 mt-auto">
           <div className="flex items-baseline gap-0.5">
             <IndianRupee size={14} className="text-brand" />
             <span className="font-display font-bold text-brand text-base sm:text-lg">

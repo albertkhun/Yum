@@ -6,7 +6,7 @@ import { DISTRICTS, CATEGORIES, FACILITIES, getImageUrl } from '../../utils/help
 import MapPicker from '../../components/common/MapPicker';
 import toast from 'react-hot-toast';
 
-const PERIODS = ['per month', 'per week', 'per day'];
+const PERIODS = ['per month', 'per week', 'per night'];
 
 export default function EditListing() {
   const { id }   = useParams();
@@ -73,6 +73,9 @@ export default function EditListing() {
     setNewPreviews((p) => [...p, ...urls]);
   };
 
+  const removeExisting = (i) =>
+    setExistingImages((prev) => prev.filter((_, j) => j !== i));
+
   const submit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -84,6 +87,7 @@ export default function EditListing() {
       });
       if (coords.lat) fd.append('lat', coords.lat);
       if (coords.lng) fd.append('lng', coords.lng);
+      existingImages.forEach((url) => fd.append('keepImages', url));
       newPreviews.forEach(({ file }) => fd.append('images', file));
       await listingAPI.update(id, fd);
       // Handle VR upload/removal
@@ -183,7 +187,7 @@ export default function EditListing() {
                 {PERIODS.map((p) => (
                   <button key={p} type="button" onClick={() => setForm({ ...form, pricePeriod: p })}
                     className={`flex-1 py-2.5 rounded-xl border-2 text-xs font-semibold transition-colors ${form.pricePeriod === p ? 'border-brand bg-orange-50 text-brand' : 'border-gray-200 text-gray-600'}`}>
-                    {p.replace('per ', '/')}
+                    {p === 'per night' ? '/night' : p === 'per week' ? '/week' : '/month'}
                   </button>
                 ))}
               </div>
@@ -242,10 +246,14 @@ export default function EditListing() {
           {existingImages.length > 0 && (
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-4">
               {existingImages.map((img, i) => (
-                <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-gray-100">
-                  <img src={getImageUrl(img)} alt="" className="w-full h-full object-cover"
+                <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-gray-100 group">
+                  <img src={getImageUrl(img, { width: 200, height: 200, crop: 'fill' })} alt="" className="w-full h-full object-cover"
                     onError={(e) => { e.target.src = 'https://placehold.co/100x100/f97316/white?text=Img'; }} />
-                  <div className="absolute bottom-0 left-0 right-0 bg-black/40 text-white text-[9px] text-center py-0.5">Existing</div>
+                  <button type="button" onClick={() => removeExisting(i)}
+                    className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    <X size={10} />
+                  </button>
+                  <div className="absolute bottom-0 left-0 right-0 bg-black/40 text-white text-[9px] text-center py-0.5 pointer-events-none">Saved</div>
                 </div>
               ))}
             </div>

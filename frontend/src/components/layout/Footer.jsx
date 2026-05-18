@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { Home, Phone, Mail, MapPin } from 'lucide-react';
+import { Phone, Mail, MapPin } from 'lucide-react';
+import yumvrLogo from '../../assets/yumvr-logo.jpeg';
 
 export default function Footer() {
   return (
@@ -7,12 +8,17 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
           <div className="sm:col-span-2 lg:col-span-1">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 bg-brand rounded-lg flex items-center justify-center">
-                <Home size={16} className="text-white" />
+            <Link to="/" className="flex items-center gap-2.5 group yumvr-nav-brand mb-3">
+              <div className="yumvr-logo-wrap">
+                <img src={yumvrLogo} alt="YumVR" className="yumvr-logo-img" />
               </div>
-              <span className="font-display font-bold text-white text-lg">Yum</span>
-            </div>
+              <div className="yumvr-brand-text">
+                <div className="yumvr-name">
+                  <span className="yumvr-yum text-black [text-shadow:_-1px_-1px_0_white,1px_-1px_0_white,-1px_1px_0_white,1px_1px_0_white]">Yum</span><span className="yumvr-vr">VR</span>
+                </div>
+                <div className="yumvr-tagline">Rental &amp; Stay Platform</div>
+              </div>
+            </Link>
             <p className="text-sm text-gray-400 leading-relaxed max-w-xs">
               Manipur's trusted rental platform. Find rents, apartments, hostel and more across all districts in Manipur.
             </p>

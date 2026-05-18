@@ -15,9 +15,49 @@ const deleteImages = async (images = []) => {
   await Promise.allSettled(ids.map((id) => cloudinary.uploader.destroy(id)));
 };
 
-// POST /api/listings 
+const VALID_CATEGORIES = ['Rent', 'Apartment', 'PG', 'Hostel', 'Lodge', 'Tolet', 'Other'];
+const VALID_DISTRICTS  = [
+  'Imphal East', 'Imphal West', 'Thoubal', 'Bishnupur',
+  'Churachandpur', 'Chandel', 'Ukhrul', 'Senapati',
+  'Tamenglong', 'Jiribam', 'Kakching', 'Kangpokpi',
+  'Noney', 'Pherzawl', 'Tengnoupal', 'Kamjong',
+];
+
+const validateListingFields = (body) => {
+  const { title, description, category, priceAmount, district, locality, contactNumber } = body;
+  const errors = [];
+
+  if (!title?.trim())          errors.push('Title is required');
+  if (!description?.trim())    errors.push('Description is required');
+  if (!category)               errors.push('Category is required');
+  if (!priceAmount)            errors.push('Price is required');
+  if (!district)               errors.push('District is required');
+  if (!locality?.trim())       errors.push('Locality is required');
+  if (!contactNumber?.trim())  errors.push('Contact number is required');
+
+  if (category && !VALID_CATEGORIES.includes(category)) {
+    errors.push(`Invalid category. Must be one of: ${VALID_CATEGORIES.join(', ')}`);
+  }
+  if (district && !VALID_DISTRICTS.includes(district)) {
+    errors.push(`Invalid district`);
+  }
+  if (priceAmount && (isNaN(Number(priceAmount)) || Number(priceAmount) < 0)) {
+    errors.push('Price must be a positive number');
+  }
+
+  return errors;
+};
+
 const createListing = async (req, res) => {
   try {
+    const validationErrors = validateListingFields(req.body);
+    if (validationErrors.length > 0) {
+      if (req.files?.length > 0) {
+        await deleteImages(req.files.map((f) => f.path));
+      }
+      return res.status(400).json({ message: validationErrors[0], errors: validationErrors });
+    }
+
     const {
       title, description, category,
       priceAmount, pricePeriod,
@@ -26,35 +66,52 @@ const createListing = async (req, res) => {
       facilities, contactNumber, whatsappNumber,
     } = req.body;
 
-    const images = req.files ? req.files.map((f) => f.path) : [];
+    const images = req.files ? req.files.map((f) => f.path).filter(Boolean) : [];
+
+    const parseFacilities = (raw) => {
+      if (!raw) return [];
+      if (Array.isArray(raw)) return raw.filter(Boolean);
+      return raw.split(',').map((f) => f.trim()).filter(Boolean);
+    };
 
     const listing = await Listing.create({
-      title, description, category,
-      price: { amount: Number(priceAmount), period: pricePeriod || 'per month' },
+      title:       title.trim(),
+      description: description.trim(),
+      category,
+      price: {
+        amount: Number(priceAmount),
+        period: ['per night', 'per week', 'per month'].includes(pricePeriod) ? pricePeriod : 'per month',
+      },
       location: {
-        district, locality, landmark,
+        district,
+        locality: locality.trim(),
+        landmark: landmark?.trim() || '',
         coordinates: {
           lat: lat ? parseFloat(lat) : null,
           lng: lng ? parseFloat(lng) : null,
         },
       },
-      facilities: facilities
-        ? (Array.isArray(facilities) ? facilities : facilities.split(',').map((f) => f.trim()))
-        : [],
+      facilities: parseFacilities(facilities),
       images,
-      contactNumber,
-      whatsappNumber: whatsappNumber || contactNumber || '',
+      contactNumber:  contactNumber.trim(),
+      whatsappNumber: whatsappNumber?.trim() || contactNumber.trim(),
       createdBy: req.user.id,
-      approved: req.user.role === 'admin',
+      approved:  req.user.role === 'admin',
     });
 
     res.status(201).json({ success: true, message: 'Listing created', listing });
   } catch (err) {
+    if (req.files?.length > 0) {
+      await deleteImages(req.files.map((f) => f.path)).catch(() => {});
+    }
+    if (err.name === 'ValidationError') {
+      const messages = Object.values(err.errors).map((e) => e.message);
+      return res.status(400).json({ message: messages[0], errors: messages });
+    }
     res.status(500).json({ message: 'Failed to create listing', error: err.message });
   }
 };
 
-// GET /api/listings 
 const getListings = async (req, res) => {
   try {
     const {
@@ -64,7 +121,7 @@ const getListings = async (req, res) => {
     } = req.query;
 
     const pageNum  = Math.max(1, Number(page));
-    const limitNum = Math.min(50, Math.max(1, Number(limit))); // cap at 50
+    const limitNum = Math.min(50, Math.max(1, Number(limit)));
 
     const match = { approved: true };
 
@@ -76,9 +133,9 @@ const getListings = async (req, res) => {
       ];
     }
 
-    if (category)  match.category           = category;
-    if (district)  match['location.district'] = district;
-    if (status)    match.status             = status;
+    if (category && VALID_CATEGORIES.includes(category)) match.category = category;
+    if (district && VALID_DISTRICTS.includes(district))   match['location.district'] = district;
+    if (status && ['available', 'rented'].includes(status)) match.status = status;
 
     if (minPrice || maxPrice) {
       match['price.amount'] = {};
@@ -90,20 +147,18 @@ const getListings = async (req, res) => {
 
     const [total, listings] = await Promise.all([
       Listing.countDocuments(match),
-
       Listing.aggregate([
         { $match: match },
         { $sort: { createdAt: -1 } },
         { $skip: skip },
         { $limit: limitNum },
-
         {
           $lookup: {
             from:     'reviews',
             let:      { listingId: '$_id' },
             pipeline: [
               { $match: { $expr: { $eq: ['$listing', '$$listingId'] } } },
-              { $project: { rating: 1, _id: 0 } },  // Only rating field
+              { $project: { rating: 1, _id: 0 } },
             ],
             as: 'reviews',
           },
@@ -121,8 +176,6 @@ const getListings = async (req, res) => {
           },
         },
         { $unset: 'reviews' },
-
-        
         {
           $lookup: {
             from:     'users',
@@ -135,8 +188,6 @@ const getListings = async (req, res) => {
           },
         },
         { $unwind: { path: '$createdBy', preserveNullAndEmptyArrays: true } },
-
-      
         {
           $project: {
             title:         1,
@@ -169,10 +220,8 @@ const getListings = async (req, res) => {
   }
 };
 
-// GET /api/listings/:id 
 const getListingById = async (req, res) => {
   try {
-    
     const listing = await Listing
       .findById(req.params.id)
       .populate('createdBy', 'name email phone')
@@ -185,13 +234,12 @@ const getListingById = async (req, res) => {
   }
 };
 
-//GET /api/listings/my/listings 
 const getMyListings = async (req, res) => {
   try {
     const listings = await Listing
       .find({ createdBy: req.user.id })
       .sort({ createdAt: -1 })
-      .lean();  // lean() here too
+      .lean();
 
     res.json({ success: true, listings });
   } catch (err) {
@@ -199,7 +247,6 @@ const getMyListings = async (req, res) => {
   }
 };
 
-// PUT /api/listings/:id 
 const updateListing = async (req, res) => {
   try {
     const listing = await Listing.findById(req.params.id);
@@ -216,31 +263,54 @@ const updateListing = async (req, res) => {
       facilities, contactNumber, whatsappNumber, status,
     } = req.body;
 
-    const newImages = req.files ? req.files.map((f) => f.path) : [];
+    if (category && !VALID_CATEGORIES.includes(category)) {
+      return res.status(400).json({ message: `Invalid category. Must be one of: ${VALID_CATEGORIES.join(', ')}` });
+    }
+
+    const newImages = req.files ? req.files.map((f) => f.path).filter(Boolean) : [];
+
+    const rawKeep = req.body.keepImages;
+    let keptImages;
+    if (rawKeep !== undefined) {
+      keptImages = Array.isArray(rawKeep) ? rawKeep.filter(Boolean) : [rawKeep].filter(Boolean);
+    } else {
+      keptImages = listing.images;
+    }
+
+    const removedImages = listing.images.filter((url) => !keptImages.includes(url));
+    if (removedImages.length > 0) {
+      await deleteImages(removedImages).catch(() => {});
+    }
+
+    const finalImages = [...keptImages, ...newImages];
 
     const hasCoordUpdate = lat !== undefined || lng !== undefined;
     const newCoords = hasCoordUpdate
       ? { lat: lat ? parseFloat(lat) : null, lng: lng ? parseFloat(lng) : null }
       : listing.location.coordinates;
 
+    const parseFacilities = (raw) => {
+      if (!raw) return undefined;
+      if (Array.isArray(raw)) return raw.filter(Boolean);
+      return raw.split(',').map((f) => f.trim()).filter(Boolean);
+    };
+
     const updatedData = {
-      ...(title       && { title }),
-      ...(description && { description }),
+      ...(title       && { title: title.trim() }),
+      ...(description && { description: description.trim() }),
       ...(category    && { category }),
       ...(priceAmount && { price: { amount: Number(priceAmount), period: pricePeriod || listing.price.period } }),
       location: {
         district:    district   || listing.location.district,
         locality:    locality   || listing.location.locality,
-        landmark:    landmark   !== undefined ? landmark : listing.location.landmark,
+        landmark:    landmark   !== undefined ? landmark.trim() : listing.location.landmark,
         coordinates: newCoords,
       },
-      ...(facilities && {
-        facilities: Array.isArray(facilities) ? facilities : facilities.split(',').map((f) => f.trim()),
-      }),
-      ...(contactNumber  && { contactNumber }),
-      ...(whatsappNumber !== undefined && { whatsappNumber }),
-      ...(status         && { status }),
-      ...(newImages.length > 0 && { images: [...listing.images, ...newImages] }),
+      ...(facilities !== undefined && { facilities: parseFacilities(facilities) || listing.facilities }),
+      ...(contactNumber  && { contactNumber: contactNumber.trim() }),
+      ...(whatsappNumber !== undefined && { whatsappNumber: whatsappNumber.trim() }),
+      ...(status && ['available', 'rented'].includes(status) && { status }),
+      images: finalImages,
       ...(req.user.role !== 'admin' && { approved: false }),
     };
 
@@ -250,11 +320,14 @@ const updateListing = async (req, res) => {
 
     res.json({ success: true, message: 'Listing updated', listing: updated });
   } catch (err) {
+    if (err.name === 'ValidationError') {
+      const messages = Object.values(err.errors).map((e) => e.message);
+      return res.status(400).json({ message: messages[0], errors: messages });
+    }
     res.status(500).json({ message: 'Failed to update listing', error: err.message });
   }
 };
 
-//DELETE /api/listings/:id 
 const deleteListing = async (req, res) => {
   try {
     const listing = await Listing.findById(req.params.id);
@@ -270,7 +343,6 @@ const deleteListing = async (req, res) => {
   }
 };
 
-//PATCH /api/listings/:id/status 
 const toggleStatus = async (req, res) => {
   try {
     const listing = await Listing.findById(req.params.id);
@@ -286,7 +358,6 @@ const toggleStatus = async (req, res) => {
   }
 };
 
-//GET /api/listings/stats 
 const getPublicStats = async (req, res) => {
   try {
     const User = require('../models/User');
@@ -333,7 +404,6 @@ const getPublicStats = async (req, res) => {
   }
 };
 
-//PATCH /api/listings/:id/vr 
 const uploadVR = async (req, res) => {
   try {
     const listing = await Listing.findById(req.params.id);
@@ -356,8 +426,8 @@ const uploadVR = async (req, res) => {
     await listing.save();
 
     res.json({
-      success:  true,
-      message:  vrMediaUrl ? 'VR media uploaded' : 'VR media removed',
+      success:   true,
+      message:   vrMediaUrl ? 'VR media uploaded' : 'VR media removed',
       vrMediaUrl,
     });
   } catch (err) {

@@ -11,7 +11,6 @@ import {
   getCardImageUrl, getCategoryColor, truncate,
 } from '../../utils/helpers';
 
-// ── List-view row — memoized to prevent re-renders on pagination ─────────
 const ListCardRow = memo(function ListCardRow({ listing }) {
   const { _id, title, category, price, location, images, status, description } = listing;
   return (
@@ -53,7 +52,6 @@ const ListCardRow = memo(function ListCardRow({ listing }) {
   );
 });
 
-// ── Pagination — memoized, only re-renders when page/pages changes 
 const Pagination = memo(function Pagination({ currentPage, pages, onPage }) {
   if (pages <= 1) return null;
   return (
@@ -96,7 +94,6 @@ const Pagination = memo(function Pagination({ currentPage, pages, onPage }) {
   );
 });
 
-// Main page 
 export default function ListingsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [listings, setListings] = useState([]);
@@ -105,8 +102,16 @@ export default function ListingsPage() {
   const [pages,    setPages]    = useState(1);
   const [view,     setView]     = useState('grid');
 
-  // AbortController ref — cancels the previous request when filters change
-  const abortRef = useRef(null);
+  const abortRef   = useRef(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      abortRef.current?.abort();
+    };
+  }, []);
 
   const currentPage = Number(searchParams.get('page') || 1);
   const search      = searchParams.get('search')   || '';
@@ -117,32 +122,38 @@ export default function ListingsPage() {
   const status      = searchParams.get('status')   || '';
 
   const fetchListings = useCallback(async () => {
-    // OPTIMIZATION: Cancel previous in-flight request.
     abortRef.current?.abort();
     abortRef.current = new AbortController();
+    const signal = abortRef.current.signal;
 
-    setLoading(true);
+    if (mountedRef.current) setLoading(true);
+
     try {
       const { data } = await listingAPI.getAll({
         search, category, district, minPrice, maxPrice, status,
         page: currentPage, limit: 12,
       });
-      setListings(data.listings || []);
-      setTotal(data.total || 0);
-      setPages(data.pages || 1);
+
+      if (!signal.aborted && mountedRef.current) {
+        setListings(data.listings || []);
+        setTotal(data.total || 0);
+        setPages(data.pages || 1);
+      }
     } catch (err) {
-      if (err.code !== 'ERR_CANCELED') setListings([]);
+      if (!signal.aborted && mountedRef.current && err.code !== 'ERR_CANCELED') {
+        setListings([]);
+        setTotal(0);
+      }
     } finally {
-      setLoading(false);
+      if (!signal.aborted && mountedRef.current) setLoading(false);
     }
   }, [search, category, district, minPrice, maxPrice, status, currentPage]);
 
   useEffect(() => {
     fetchListings();
     window.scrollTo({ top: 0, behavior: 'instant' });
-    return () => abortRef.current?.abort();
   }, [fetchListings]);
-  
+
   const updateParam = useCallback((key, value) => {
     setSearchParams((prev) => {
       const p = new URLSearchParams(prev);
@@ -182,7 +193,6 @@ export default function ListingsPage() {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6">
-        {/* Sidebar filters */}
         <aside className="hidden lg:block w-64 shrink-0">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sticky top-24 space-y-6">
             <h3 className="font-display font-bold text-gray-900 text-base">Filters</h3>
@@ -262,7 +272,6 @@ export default function ListingsPage() {
           </div>
         </aside>
 
-        {/* Main content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-4">
             <p className="text-sm text-gray-500">
@@ -300,7 +309,7 @@ export default function ListingsPage() {
           ) : (
             <div className={
               view === 'grid'
-                ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5'
+                ? 'grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-8'
                 : 'flex flex-col gap-4'
             }>
               {listings.map((listing) =>

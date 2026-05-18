@@ -470,7 +470,7 @@ export default function ListingDetail() {
                 ) : (
                   <button onClick={() => requireAuth(() => setShowPhone(true))}
                     className="btn-primary w-full flex items-center justify-center gap-2.5">
-                    <Phone size={20} />Show Contact Number
+                    <Phone size={20} /> Contact Owner
                   </button>
                 )}
 

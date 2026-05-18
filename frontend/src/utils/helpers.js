@@ -1,42 +1,22 @@
 export const formatPrice = (amount, period) =>
   `₹${Number(amount).toLocaleString('en-IN')} ${period || 'per month'}`;
 
-/**
- * CRITICAL OPTIMIZATION: Cloudinary URL transformation
- *
- * Original code returns raw Cloudinary URLs — full-resolution images
- * served as-is (can be 3–8MB per image).
- *
- * This function injects Cloudinary transformation parameters:
- *   - f_auto:  Serve WebP to Chrome, AVIF to supported browsers — 30-50% smaller
- *   - q_auto:  Cloudinary AI picks optimal quality per image — 20-40% smaller
- *   - w_XXX:   Resize to the exact display size — massive savings on mobile
- *   - c_fill:  Smart crop to fill the exact dimensions
- *   - dpr_auto: Serve 2x images only to retina screens
- *
- * IMPACT: A 4MB JPEG becomes a 120kB WebP thumbnail for cards.
- * LCP (Largest Contentful Paint) drops by 2–3 seconds on mobile.
- */
 export function getImageUrl(path, opts = {}) {
   if (!path) return 'https://placehold.co/400x300/f97316/white?text=No+Image';
 
-  // Local/relative paths (dev server)
   if (!path.startsWith('http')) {
     return `${import.meta.env.VITE_API_BASE || 'http://localhost:5001'}${path}`;
   }
 
-  // Non-Cloudinary URLs — return as-is
   if (!path.includes('cloudinary.com')) return path;
 
   const {
-    width  = 800,
+    width   = 800,
     height,
     quality = 'auto',
     crop    = 'fill',
   } = opts;
 
-  // Inject transformation string after /upload/
-  // Cloudinary format: /upload/[transformations]/[version]/[public_id]
   const transform = [
     `f_auto`,
     `q_${quality}`,
@@ -46,16 +26,25 @@ export function getImageUrl(path, opts = {}) {
     `dpr_auto`,
   ].filter(Boolean).join(',');
 
-  return path.replace('/upload/', `/upload/${transform}/`);
+  const uploadIdx = path.indexOf('/upload/');
+  if (uploadIdx === -1) return path;
+
+  const afterUpload = path.slice(uploadIdx + '/upload/'.length);
+
+  const alreadyTransformed = /^[a-z]_[a-zA-Z0-9]/.test(afterUpload);
+  if (alreadyTransformed) {
+    const slashIdx = afterUpload.indexOf('/');
+    if (slashIdx !== -1) {
+      const rest = afterUpload.slice(slashIdx + 1);
+      return `${path.slice(0, uploadIdx)}/upload/${transform}/${rest}`;
+    }
+  }
+
+  return `${path.slice(0, uploadIdx)}/upload/${transform}/${afterUpload}`;
 }
 
-/**
- * Preset URL helpers for common use-cases.
- * These are memoized-by-convention — callers should use them consistently
- * so browser HTTP cache can serve repeat images from disk.
- */
-export const getCardImageUrl  = (path) => getImageUrl(path, { width: 600,  height: 450, crop: 'fill' });
-export const getThumbImageUrl = (path) => getImageUrl(path, { width: 120,  height: 90,  crop: 'fill' });
+export const getCardImageUrl   = (path) => getImageUrl(path, { width: 600,  height: 450, crop: 'fill' });
+export const getThumbImageUrl  = (path) => getImageUrl(path, { width: 120,  height: 90,  crop: 'fill' });
 export const getDetailImageUrl = (path) => getImageUrl(path, { width: 1200, height: 675, crop: 'fill' });
 export const getHeroImageUrl   = (path) => getImageUrl(path, { width: 1400, quality: 'auto:best' });
 
