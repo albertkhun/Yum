@@ -41,8 +41,7 @@ const GoogleMapsIcon = ({ size = 20 }) => (
     <circle fill="#bbc1cb" cx="32" cy="26" r="6"/>
   </svg>
 );
- 
-// Mapbox zoom where ~200m radius 
+
 const PRIVACY_RADIUS_M = 150;
 
 function getZoomForRadius(radiusM, latitudeDeg, mapHeightPx) {
@@ -60,7 +59,7 @@ function MapPanel({ lat, lng, category }) {
   const mapRef        = useRef(null);
   const [loaded,      setLoaded]     = useState(false);
   const [loading,     setLoading]    = useState(true);
-  const [activeStyle, setActiveStyle] = useState('streets');
+  const [activeStyle, setActiveStyle] = useState('satellite');
   const [styleOpen,   setStyleOpen]  = useState(false);
 
   const svgPath = CATEGORY_SVG_PATH[category] || CATEGORY_SVG_PATH.Other;
@@ -88,11 +87,11 @@ function MapPanel({ lat, lng, category }) {
     mapboxgl.accessToken = MAPBOX_TOKEN;
 
     const mapHeightPx = containerRef.current.clientHeight || 480;
-    const autoZoom    = getZoomForRadius(PRIVACY_RADIUS_M, lat, mapHeightPx);
+    const autoZoom = 15;
 
     const map = new mapboxgl.Map({
       container: containerRef.current,
-      style:     MAP_STYLES[0].url,
+      style: MAP_STYLES.find(s => s.id === 'satellite').url,
       center:    [lng, lat],
       zoom:      autoZoom,
     });
@@ -413,15 +412,38 @@ export default function ListingDetail() {
 
           {facilities?.length > 0 && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6">
-              <h2 className="font-display font-bold text-gray-900 text-lg mb-4">Facilities & Amenities</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+
+              <h2 className="font-display font-bold text-gray-900 text-lg mb-4">
+                Facilities
+              </h2>
+
+              <div className="flex flex-wrap gap-2">
+
                 {facilities.map((f) => (
-                  <div key={f} className="flex items-center gap-2.5 bg-orange-50 rounded-xl px-3 py-2.5">
-                    <CheckCircle2 size={15} className="text-brand shrink-0" />
-                    <span className="text-sm font-medium text-gray-700">{f}</span>
+                  <div
+                    key={f}
+                    className="
+                      inline-flex items-center gap-2
+                      bg-gray-50 hover:bg-orange-50
+                      border border-gray-100 hover:border-orange-100
+                      rounded-full
+                      px-3 py-2
+                      transition-all
+                    "
+                  >
+                    <CheckCircle2
+                      size={14}
+                      className="text-brand shrink-0"
+                    />
+
+                    <span className="text-sm font-medium text-gray-700">
+                      {f}
+                    </span>
                   </div>
                 ))}
+
               </div>
+
             </div>
           )}
 
@@ -446,14 +468,20 @@ export default function ListingDetail() {
         <div className="lg:col-span-1">
           <div className="sticky top-24 space-y-4">
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6">
-              <h2 className="font-display font-bold text-gray-900 text-lg mb-4">Contact Owner</h2>
+              <h2 className="font-display font-bold text-gray-900 text-lg mb-4">
+                Contact Owner
+              </h2>
 
               <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-xl mb-4 border border-orange-100">
                 <div className="w-10 h-10 bg-brand rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0">
                   {createdBy?.name?.[0]?.toUpperCase() || 'O'}
                 </div>
+
                 <div className="min-w-0">
-                  <p className="font-semibold text-gray-800 text-sm truncate">{createdBy?.name || 'Property Owner'}</p>
+                  <p className="font-semibold text-gray-800 text-sm truncate">
+                    {createdBy?.name || 'Property Owner'}
+                  </p>
+
                   <p className="text-xs text-gray-500">Owner</p>
                 </div>
               </div>
@@ -462,31 +490,45 @@ export default function ListingDetail() {
 
                 {/* Phone */}
                 {showPhone && user ? (
-                  <a href={`tel:${contactNumber}`}
+                  <a
+                    href={`tel:${contactNumber}`}
                     className="flex items-center justify-center gap-2.5 w-full bg-brand hover:bg-brand-dark
-                               text-white font-semibold py-3.5 rounded-xl transition-colors text-sm">
-                    <Phone size={20} />{contactNumber}
+                               text-white font-semibold py-3.5 rounded-xl transition-colors text-sm"
+                  >
+                    <Phone size={20} />
+                    {contactNumber}
                   </a>
                 ) : (
-                  <button onClick={() => requireAuth(() => setShowPhone(true))}
-                    className="btn-primary w-full flex items-center justify-center gap-2.5">
-                    <Phone size={20} /> Contact Owner
+                  <button
+                    onClick={() => requireAuth(() => setShowPhone(true))}
+                    className="btn-primary w-full flex items-center justify-center gap-2.5"
+                  >
+                    <Phone size={20} />
+                    Contact Owner
                   </button>
                 )}
 
                 {/* WhatsApp */}
                 {whatsappNumber && (
                   user ? (
-                    <a href={whatsappHref} target="_blank" rel="noopener noreferrer"
+                    <a
+                      href={whatsappHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="flex items-center justify-center gap-2.5 w-full bg-[#25D366] hover:bg-[#1ebe5d]
-                                 text-white font-semibold py-3.5 rounded-xl transition-colors text-sm">
-                      <WhatsAppIcon />Chat on WhatsApp
+                                 text-white font-semibold py-3.5 rounded-xl transition-colors text-sm"
+                    >
+                      <WhatsAppIcon />
+                      Chat on WhatsApp
                     </a>
                   ) : (
-                    <button onClick={() => requireAuth(null)}
+                    <button
+                      onClick={() => requireAuth(null)}
                       className="flex items-center justify-center gap-2.5 w-full bg-[#25D366] hover:bg-[#1ebe5d]
-                                 text-white font-semibold py-3.5 rounded-xl transition-colors text-sm">
-                      <WhatsAppIcon />Chat on WhatsApp
+                                 text-white font-semibold py-3.5 rounded-xl transition-colors text-sm"
+                    >
+                      <WhatsAppIcon />
+                      Chat on WhatsApp
                     </button>
                   )
                 )}
@@ -494,45 +536,73 @@ export default function ListingDetail() {
                 {/* VR Tour */}
                 {vrMediaUrl && (
                   user ? (
-                    <button onClick={() => setVrOpen(true)}
+                    <button
+                      onClick={() => setVrOpen(true)}
                       className="flex items-center justify-center gap-2.5 w-full
                                  bg-gradient-to-r from-orange-500 to-amber-400 hover:from-orange-600 hover:to-amber-500
-                                 text-white font-semibold py-3.5 rounded-xl transition-all text-sm shadow-sm shadow-orange-200">
-                      <VRIcon />View Virtual Tour — Free
+                                 text-white font-semibold py-3.5 rounded-xl transition-all text-sm shadow-sm shadow-orange-200"
+                    >
+                      <VRIcon />
+                      View Virtual Tour — Free
                     </button>
                   ) : (
-                    <button onClick={() => requireAuth(() => setVrOpen(true))}
+                    <button
+                      onClick={() => requireAuth(() => setVrOpen(true))}
                       className="flex items-center justify-center gap-2.5 w-full
                                  bg-gradient-to-r from-orange-500 to-amber-400 hover:from-orange-600 hover:to-amber-500
-                                 text-white font-semibold py-3.5 rounded-xl transition-all text-sm shadow-sm shadow-orange-200">
-                      <VRIcon />View Virtual Tour — Free
+                                 text-white font-semibold py-3.5 rounded-xl transition-all text-sm shadow-sm shadow-orange-200"
+                    >
+                      <VRIcon />
+                      View Virtual Tour — Free
                     </button>
                   )
                 )}
 
-                {/* Get Directions — always visible, login-gated */}
+                {/* Get Directions */}
                 {gmapsUrl && <DirectionsBtn />}
               </div>
 
               {!user && (
                 <p className="text-xs text-gray-400 text-center mt-4">
-                  <Link to="/login" state={{ from: location.pathname }} className="text-brand font-semibold hover:underline">Login</Link>
+                  <Link
+                    to="/login"
+                    state={{ from: location.pathname }}
+                    className="text-brand font-semibold hover:underline"
+                  >
+                    Login
+                  </Link>
+
                   {' or '}
-                  <Link to="/register" state={{ from: location.pathname }} className="text-brand font-semibold hover:underline">sign up</Link>
+
+                  <Link
+                    to="/register"
+                    state={{ from: location.pathname }}
+                    className="text-brand font-semibold hover:underline"
+                  >
+                    sign up
+                  </Link>
+
                   {' to contact the owner.'}
                 </p>
               )}
 
-              <p className="text-xs text-gray-400 text-center mt-4">Posted {timeAgo(createdAt)}</p>
+              <p className="text-xs text-gray-400 text-center mt-4">
+                Posted {timeAgo(createdAt)}
+              </p>
             </div>
 
             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
               <div className="flex items-start gap-2.5">
                 <Flag size={16} className="text-amber-500 shrink-0 mt-0.5" />
+
                 <div>
-                  <p className="text-sm font-semibold text-amber-800 mb-1">Safety Tip</p>
+                  <p className="text-sm font-semibold text-amber-800 mb-1">
+                    Safety Tip
+                  </p>
+
                   <p className="text-xs text-amber-700 leading-relaxed">
-                    Always visit the property in person before making any payment. Never transfer money without seeing the property.
+                    Always visit the property in person before making any payment.
+                    Never transfer money without seeing the property.
                   </p>
                 </div>
               </div>
@@ -540,8 +610,14 @@ export default function ListingDetail() {
 
             {isOwner && (
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-                <p className="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">Owner Actions</p>
-                <Link to={`/owner/edit/${listing._id}`} className="btn-secondary w-full text-center text-sm block">
+                <p className="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">
+                  Owner Actions
+                </p>
+
+                <Link
+                  to={`/owner/edit/${listing._id}`}
+                  className="btn-secondary w-full text-center text-sm block"
+                >
                   Edit Listing
                 </Link>
               </div>
@@ -550,17 +626,91 @@ export default function ListingDetail() {
         </div>
       </div>
 
+      {/* MOBILE FIXED CONTACT BAR */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-2xl px-4 py-3 pb-[calc(env(safe-area-inset-bottom)+12px)]">
+
+        <div className="flex items-center gap-3">
+
+          {/* PRICE */}
+          <div className="min-w-fit">
+            <p className="text-lg font-bold text-gray-900 leading-none">
+              ₹{Number(price?.amount).toLocaleString('en-IN')}
+            </p>
+
+            <p className="text-xs text-gray-500 mt-1">
+              {price?.period}
+            </p>
+          </div>
+
+          {/* CONTACT BUTTON */}
+          <div className="flex-1">
+
+            {showPhone && user ? (
+              <a
+                href={`tel:${contactNumber}`}
+                className="flex items-center justify-center gap-2
+                           w-full bg-brand text-white
+                           py-3 rounded-2xl font-semibold text-sm"
+              >
+                <Phone size={18} />
+                Call Owner
+              </a>
+            ) : (
+              <button
+                onClick={() => requireAuth(() => setShowPhone(true))}
+                className="flex items-center justify-center gap-2
+                           w-full bg-brand text-white
+                           py-3 rounded-2xl font-semibold text-sm"
+              >
+                <Phone size={18} />
+                Contact Owner
+              </button>
+            )}
+
+          </div>
+
+          {/* VR BUTTON */}
+          {vrMediaUrl && (user ? (
+            <button
+            onClick={() => setVrOpen(true)}
+            className="w-12 h-12 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-400
+                 flex items-center justify-center shrink-0 text-white">
+                <VRIcon />
+            </button>
+            ) : (
+      <button
+      onClick={() => requireAuth(() => setVrOpen(true))}
+      className="w-12 h-12 rounded-2xl
+                 bg-gradient-to-r from-orange-500 to-amber-400
+                 flex items-center justify-center shrink-0 text-white">
+        <VRIcon />
+      </button>
+      )
+    )}
+
+        </div>
+      </div>
+
     
       {hasCoords && (
         <div className="mt-10">
           <div className="mb-4">
-            <h2 className="font-display font-bold text-gray-900 text-2xl">Where you'll be</h2>
+            <h2 className="font-display font-bold text-gray-900 text-2xl">
+              Where you'll be
+            </h2>
+
             <p className="text-gray-500 text-sm mt-1">
-              {loc?.locality}{loc?.landmark ? `, near ${loc.landmark}` : ''}, {loc?.district}
+              {loc?.locality}
+              {loc?.landmark ? `, near ${loc.landmark}` : ''},
+              {' '}
+              {loc?.district}
             </p>
           </div>
 
-          <div className="w-full rounded-3xl overflow-hidden border border-gray-200 shadow-md" style={{ height: '480px' }}>
+          <div
+            className="w-full rounded-3xl overflow-hidden border border-gray-200 shadow-md"
+            style={{ height: '480px' }}
+          >
             <MapPanel
               lat={loc.coordinates.lat}
               lng={loc.coordinates.lng}
