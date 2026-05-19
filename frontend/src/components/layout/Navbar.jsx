@@ -1,14 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useWishlist } from '../../context/WishlistContext';
 import {
   Home, Search, PlusSquare, LayoutDashboard, LogOut,
-  Menu, X, ShieldCheck, User, Settings, KeyRound, ChevronDown,
+  Menu, X, ShieldCheck, User, Settings, KeyRound, ChevronDown, Heart,
 } from 'lucide-react';
 import yumvrLogo from '../../assets/yumvr-logo.jpeg';
 
 export default function Navbar() {
   const { user, logout, isAdmin, isOwner } = useAuth();
+  const { ids: wishlistIds } = useWishlist();
   const navigate  = useNavigate();
   const location  = useLocation();
   const [open,        setOpen]        = useState(false);
@@ -64,6 +66,10 @@ export default function Navbar() {
               <KeyRound size={15} className="text-gray-400" />Change Password
             </Link>
           )}
+          <Link to="/wishlist" onClick={() => setSettingsOpen(false)}
+            className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors w-full text-left">
+            <Heart size={15} className="text-gray-400" />My Wishlist
+          </Link>
           {isAdmin && (
             <Link to="/admin/settings" onClick={() => setSettingsOpen(false)}
               className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors w-full text-left">
@@ -93,7 +99,7 @@ export default function Navbar() {
             </div>
             <div className="yumvr-brand-text">
               <div className="yumvr-name">
-                <span className="yumvr-yum text-black [text-shadow:_-1px_-1px_0_white,1px_-1px_0_white,-1px_1px_0_white,1px_1px_0_white]">Yum</span><span className="yumvr-vr">VR</span>
+                <span className="yumvr-yum">Yum</span><span className="yumvr-vr">VR</span>
               </div>
               <div className="yumvr-tagline hidden sm:block">Rental &amp; Stay Platform</div>
             </div>
@@ -109,6 +115,16 @@ export default function Navbar() {
 
           {/* Desktop right */}
           <div className="hidden md:flex items-center gap-2">
+            {user && (
+              <Link to="/wishlist" className="relative p-2 rounded-xl text-gray-500 hover:bg-gray-100 hover:text-red-500 transition-colors" aria-label="Wishlist">
+                <Heart size={19} className={wishlistIds.length > 0 ? 'text-red-500' : ''} />
+                {wishlistIds.length > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center leading-none">
+                    {wishlistIds.length > 9 ? '9+' : wishlistIds.length}
+                  </span>
+                )}
+              </Link>
+            )}
             {user ? <UserMenu /> : (
               <div className="flex items-center gap-2">
                 <Link to="/login" className="btn-ghost text-sm">Login</Link>
@@ -143,6 +159,7 @@ export default function Navbar() {
           )}
           <NavLink to="/" icon={Home} label="Home" />
           <NavLink to="/listings" icon={Search} label="Browse Listings" />
+          {user && <NavLink to="/wishlist" icon={Heart} label={`My Wishlist${wishlistIds.length > 0 ? ` (${wishlistIds.length})` : ''}`} />}
           {isOwner && (<><NavLink to="/owner/create" icon={PlusSquare} label="Post a Listing" /><NavLink to="/owner" icon={LayoutDashboard} label="My Listings" /></>)}
           {isAdmin && (<>
             <NavLink to="/admin" icon={ShieldCheck} label="Admin Dashboard" />

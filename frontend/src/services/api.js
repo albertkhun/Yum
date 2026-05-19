@@ -2,67 +2,55 @@ import axios from 'axios';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
-/**
- * OPTIMIZATION 1: Single axios instance with baseURL
- * Avoids re-creating config objects on every call.
- */
 const api = axios.create({
   baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
-  // Timeout prevents hanging requests from blocking the UI
   timeout: 15000,
 });
 
-// Request interceptor — attach token 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-// Response interceptor — handle 401
 api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      // Use replace instead of href to avoid adding to history
-      window.location.replace('/login');
+      const isAuthRoute = err.config?.url?.includes('/auth/');
+      if (!isAuthRoute) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.replace('/login');
+      }
     }
     return Promise.reject(err);
   }
 );
 
-//OPTIMIZATION 2: In-flight request deduplication
- 
-const inflightCache = new Map();
+const responseCache = new Map();
 
 export function cachedGet(url, params = {}, ttlMs = 30_000) {
   const key = `${url}?${new URLSearchParams(params).toString()}`;
+  const cached = responseCache.get(key);
 
-  // Return cached promise if it's still fresh
-  const cached = inflightCache.get(key);
   if (cached && Date.now() - cached.ts < ttlMs) {
-    return cached.promise;
+    return Promise.resolve(cached.response);
   }
 
-  const promise = api.get(url, { params })
-    .finally(() => {
-      // Remove from cache after TTL so next call after TTL is fresh
-      setTimeout(() => inflightCache.delete(key), ttlMs);
-    });
-
-  inflightCache.set(key, { promise, ts: Date.now() });
-  return promise;
+  return api.get(url, { params }).then((response) => {
+    responseCache.set(key, { response, ts: Date.now() });
+    setTimeout(() => responseCache.delete(key), ttlMs);
+    return response;
+  });
 }
 
-// OPTIMIZATION 3: AbortController factory for cancellable requests
-export function createAbortController() {
-  return new AbortController();
+export function invalidateCache(urlPrefix) {
+  for (const key of responseCache.keys()) {
+    if (key.startsWith(urlPrefix)) responseCache.delete(key);
+  }
 }
-
-//API modules
 
 export const authAPI = {
   register:              (data)       => api.post('/auth/register', data),
@@ -77,23 +65,29 @@ export const authAPI = {
 };
 
 export const listingAPI = {
-  //OPTIMIZATION 4: Use cachedGet for listing browsing
-  getAll:        (params) => cachedGet('/listings', params, 30_000),
+  getAll:        (params) => api.get('/listings', { params }),
   getById:       (id)     => cachedGet(`/listings/${id}`, {}, 60_000),
   getMyListings: ()       => api.get('/listings/my/listings'),
-  getPublicStats:()       => cachedGet('/listings/stats', {}, 5 * 60_000), // 5min cache
-  create: (formData) => api.post('/listings', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
-  update: (id, formData) => api.put(`/listings/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  getPublicStats:()       => cachedGet('/listings/stats', {}, 5 * 60_000),
+  create: (formData) => api.post('/listings', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 60_000,
+  }),
+  update: (id, formData) => api.put(`/listings/${id}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 60_000,
+  }),
   delete:       (id)  => api.delete(`/listings/${id}`),
   toggleStatus: (id)  => api.patch(`/listings/${id}/status`),
   uploadVR: (id, formData) => api.patch(`/listings/${id}/vr`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 120_000,
   }),
   removeVR: (id) => api.patch(`/listings/${id}/vr`),
 };
 
 export const reviewAPI = {
-  getAll:  (listingId)                  => cachedGet(`/listings/${listingId}/reviews`, {}, 60_000),
+  getAll:  (listingId)                  => api.get(`/listings/${listingId}/reviews`),
   create:  (listingId, formData)        => api.post(`/listings/${listingId}/reviews`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   }),
@@ -113,3 +107,9 @@ export const adminAPI = {
 };
 
 export default api;
+
+export const wishlistAPI = {
+  getAll:    ()   => api.get('/wishlist'),
+  add:       (id) => api.post(`/wishlist/${id}`),
+  remove:    (id) => api.delete(`/wishlist/${id}`),
+};

@@ -10,6 +10,7 @@ const userSchema = new mongoose.Schema(
     avatar:   { type: String },                         // Google profile picture
     role:     { type: String, enum: ['user', 'owner', 'admin', null], default: null }, // null = needs role selection
     phone:    { type: String, trim: true },
+    wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Listing', default: [] }],
   },
   { timestamps: true }
 );

@@ -1,10 +1,15 @@
-import { memo } from 'react';
-import { Link } from 'react-router-dom';
-import { MapPin, IndianRupee, Star } from 'lucide-react';
-import { getCardImageUrl, getThumbImageUrl, truncate, getCategoryColor } from '../../utils/helpers';
+import { memo, useState, useCallback } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { MapPin, IndianRupee, Star, Eye, Heart } from 'lucide-react';
+import { getCardImageUrl, truncate, getCategoryColor } from '../../utils/helpers';
+import { useAuth } from '../../context/AuthContext';
+import { useWishlist } from '../../context/WishlistContext';
 
+const PLACEHOLDER = (category) =>
+  `https://placehold.co/600x450/f97316/white?text=${encodeURIComponent(category || 'Property')}`;
 
 const StarRow = memo(function StarRow({ avg, count }) {
+  if (!avg) return null;
   return (
     <div className="flex items-center gap-1">
       <div className="flex items-center gap-0.5">
@@ -12,113 +17,140 @@ const StarRow = memo(function StarRow({ avg, count }) {
           const fill = Math.min(1, Math.max(0, (avg ?? 0) - (n - 1)));
           const pct  = Math.round(fill * 100);
           return (
-            <span key={n} className="relative inline-block w-3.5 h-3.5">
-              <Star size={14} className="absolute inset-0 text-gray-300 fill-gray-300" />
+            <span key={n} className="relative inline-block w-3 h-3">
+              <Star size={12} className="absolute inset-0 text-gray-200 fill-gray-200" />
               <span className="absolute inset-0 overflow-hidden" style={{ width: `${pct}%` }}>
-                <Star size={14} className="text-amber-400 fill-amber-400" />
+                <Star size={12} className="text-amber-400 fill-amber-400" />
               </span>
             </span>
           );
         })}
       </div>
-      {count > 0 && avg ? (
-        <span className="text-[11px] font-semibold text-gray-600 leading-none">
-          {avg}
-        <span className="font-normal text-gray-400"> ({count})</span>
-        </span>
-          ) : null}
-      </div>
+      <span className="text-[11px] font-semibold text-gray-700 tabular-nums leading-none">
+        {avg}
+        {count > 0 && <span className="font-normal text-gray-400 ml-0.5">({count})</span>}
+      </span>
+    </div>
   );
 });
 
-const PLACEHOLDER = (category) =>
-  `https://placehold.co/600x450/f97316/white?text=${encodeURIComponent(category)}`;
+const ListingCard = memo(function ListingCard({ listing, variant = 'default' }) {
+  const [imgLoaded, setImgLoaded] = useState(false);
+  const [imgError, setImgError]   = useState(false);
+  const [heartAnim, setHeartAnim] = useState(false);
 
-const ListingCard = memo(function ListingCard({ listing }) {
+  const { user }                  = useAuth();
+  const { isWishlisted, toggle }  = useWishlist();
+  const navigate                  = useNavigate();
+
   const {
     _id, title, category, price, location,
     images, status, facilities, avgRating,
     reviewCount, vrMediaUrl,
   } = listing;
 
-  const imgSrc = images?.[0]
-    ? getCardImageUrl(images[0])   // Cloudinary: 600×450 WebP, q_auto
-    : PLACEHOLDER(category);
+  const wishlisted = isWishlisted(_id);
+
+  const handleWishlist = useCallback(async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) { navigate('/login'); return; }
+    setHeartAnim(true);
+    setTimeout(() => setHeartAnim(false), 400);
+    await toggle(_id);
+  }, [user, _id, toggle, navigate]);
+
+  const rawSrc = images?.[0] && !imgError ? getCardImageUrl(images[0]) : null;
+  const imgSrc = rawSrc || PLACEHOLDER(category);
+
+  const isCompact = variant === 'compact';
 
   return (
-    <Link to={`/listings/${_id}`} className="card group flex flex-col h-full">
-      <div className="relative aspect-[4/3] overflow-hidden bg-gray-100 shrink-0">
+    <Link
+      to={`/listings/${_id}`}
+      className="lc-card group block"
+      style={{ textDecoration: 'none' }}
+    >
+      <div className="lc-img-wrap">
+        {!imgLoaded && (
+          <div className="absolute inset-0 lc-skeleton" aria-hidden="true" />
+        )}
         <img
           src={imgSrc}
           alt={title}
           loading="lazy"
           decoding="async"
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          onError={(e) => { e.target.src = PLACEHOLDER(category); }}
+          onLoad={() => setImgLoaded(true)}
+          onError={() => { setImgError(true); setImgLoaded(true); }}
+          className={`lc-img ${imgLoaded ? 'lc-img-loaded' : 'lc-img-hidden'}`}
         />
-        <div className="absolute top-3 left-3 flex flex-col gap-1.5">
-          <span className={`badge text-xs font-semibold ${status === 'available' ? 'badge-green' : 'badge-red'}`}>
-            {status === 'available' ? '● Available' : '● Rented'}
+
+        <div className="lc-badges-tl">
+          <span className={`lc-badge ${status === 'available' ? 'lc-badge-green' : 'lc-badge-red'}`}>
+            <span className="lc-dot" />
+            {status === 'available' ? 'Available' : 'Rented'}
           </span>
           {vrMediaUrl && (
-            <span className="badge text-xs font-semibold"
-              style={{ background: 'rgba(0,0,0,0.65)', color: '#fff', backdropFilter: 'blur(4px)' }}>
-              🥽 VR Tour
-            </span>
+            <span className="lc-badge lc-badge-dark">🥽 VR</span>
           )}
         </div>
-        <div className="absolute top-3 right-3">
-          <span className={`badge text-xs ${getCategoryColor(category)}`}>{category}</span>
+
+        <div className="lc-badges-tr">
+          <span className={`lc-badge ${getCategoryColor(category)}`}>{category}</span>
         </div>
-        {images?.length > 1 && (
-          <div className="absolute bottom-3 right-3 bg-black/50 text-white text-xs px-2 py-0.5 rounded-full">
-            +{images.length - 1} photos
+
+        <button
+          onClick={handleWishlist}
+          aria-label={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+          className={`lc-heart ${wishlisted ? 'lc-heart-active' : ''} ${heartAnim ? 'lc-heart-pop' : ''}`}
+        >
+          <Heart size={15} className={wishlisted ? 'fill-current' : ''} />
+        </button>
+
+        {images?.length > 1 && imgLoaded && (
+          <div className="lc-photo-count">
+            <Eye size={10} />
+            {images.length}
           </div>
         )}
+
+        <div className="lc-img-overlay" aria-hidden="true" />
       </div>
 
-      <div className="p-4 flex flex-col flex-1">
-        <h3 className="font-display font-semibold text-gray-900 text-sm sm:text-base leading-snug mb-1.5 group-hover:text-brand transition-colors">
-          {truncate(title, 55)}
-        </h3>
+      <div className="lc-body">
+        <h3 className="lc-title">{truncate(title, isCompact ? 42 : 52)}</h3>
 
-        {/* Star row — always rendered so height is consistent */}
-        <div className="mb-2 min-h-[18px]">
-  {(reviewCount ?? 0) > 0 ? (
-    <StarRow avg={avgRating} count={reviewCount ?? 0} />
-  ) : (
-    <span className="text-[11px] text-gray-400">No reviews yet</span>
-  )}
-</div>
-
-        <div className="flex items-center gap-1.5 text-xs sm:text-sm text-gray-500 mb-3">
-          <MapPin size={13} className="text-brand shrink-0" />
-          <span className="truncate">{location?.locality}, {location?.district}</span>
+        <div className="lc-meta">
+          <MapPin size={11} className="lc-pin-icon" />
+          <span className="lc-location">{location?.locality}, {location?.district}</span>
         </div>
 
-        {/* Facilities — always rendered, min-height keeps row consistent */}
-        <div className="flex flex-wrap gap-1.5 mb-3 min-h-[26px] content-start">
-          {facilities?.slice(0, 3).map((f) => (
-            <span key={f} className="text-[10px] sm:text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-              {f}
-            </span>
-          ))}
-          {facilities?.length > 3 && (
-            <span className="text-[10px] sm:text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
-              +{facilities.length - 3} more
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-center justify-between pt-3 border-t border-gray-100 mt-auto">
-          <div className="flex items-baseline gap-0.5">
-            <IndianRupee size={14} className="text-brand" />
-            <span className="font-display font-bold text-brand text-base sm:text-lg">
-              {Number(price?.amount).toLocaleString('en-IN')}
-            </span>
-            <span className="text-xs text-gray-400 ml-1">{price?.period}</span>
+        {avgRating ? (
+          <div className="lc-rating">
+            <StarRow avg={avgRating} count={reviewCount ?? 0} />
           </div>
-          <span className="text-xs text-brand font-semibold group-hover:underline">View →</span>
+        ) : (
+          <div className="lc-no-review">No reviews yet</div>
+        )}
+
+        {!isCompact && facilities?.length > 0 && (
+          <div className="lc-facilities">
+            {facilities.slice(0, 3).map((f) => (
+              <span key={f} className="lc-facility-tag">{f}</span>
+            ))}
+            {facilities.length > 3 && (
+              <span className="lc-facility-tag lc-facility-more">+{facilities.length - 3}</span>
+            )}
+          </div>
+        )}
+
+        <div className="lc-footer">
+          <div className="lc-price">
+            <IndianRupee size={13} className="lc-rupee-icon" />
+            <span className="lc-amount">{Number(price?.amount).toLocaleString('en-IN')}</span>
+            <span className="lc-period">{price?.period?.replace('per ', '/')}</span>
+          </div>
+          <span className="lc-cta">View →</span>
         </div>
       </div>
     </Link>

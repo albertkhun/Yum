@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { WishlistProvider } from './context/WishlistContext';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 
@@ -32,6 +33,7 @@ const AdminSettings  = lazy(() => import('./pages/admin/AdminSettings'));
 const RoleSelectPage    = lazy(() => import('./pages/auth/RoleSelectPage'));
 const SettingsPage      = lazy(() => import('./pages/SettingsPage'));
 const ChangePasswordPage = lazy(() => import('./pages/ChangePasswordPage'));
+const WishlistPage      = lazy(() => import('./pages/WishlistPage'));
 
 // ── Inline spinner — tiny, no extra bundle ──────────────────────────────
 const Spinner = () => (
@@ -85,6 +87,7 @@ const AppShell = () => (
           {/* User */}
           <Route path="/settings"        element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
           <Route path="/change-password" element={<PrivateRoute><ChangePasswordPage /></PrivateRoute>} />
+          <Route path="/wishlist"        element={<PrivateRoute><WishlistPage /></PrivateRoute>} />
 
           {/* Owner */}
           <Route path="/owner"          element={<OwnerRoute><OwnerDashboard /></OwnerRoute>} />
@@ -115,6 +118,7 @@ const AppShell = () => (
 export default function App() {
   return (
     <AuthProvider>
+      <WishlistProvider>
       <BrowserRouter>
         <Toaster
           position="top-center"
@@ -125,6 +129,7 @@ export default function App() {
         />
         <AppShell />
       </BrowserRouter>
+      </WishlistProvider>
     </AuthProvider>
   );
 }

@@ -97,6 +97,7 @@ app.use('/api/auth',  (req, res, next) => { res.setHeader('Cache-Control', 'no-s
 app.use('/api/auth',                        authLimiter, require('./routes/authRoutes'));
 app.use('/api/listings',                    apiLimiter,  require('./routes/listingRoutes'));
 app.use('/api/listings/:listingId/reviews',              require('./routes/reviewRoutes'));
+app.use('/api/wishlist',                    apiLimiter,  require('./routes/wishlistRoutes'));
 app.use('/api/admin',                                    require('./routes/adminRoutes'));
 
 app.get('/', (req, res) => {
@@ -112,6 +113,16 @@ app.use((req, res) => res.status(404).json({ message: 'Route not found' }));
 app.use((err, req, res, next) => {
   if (err.message?.startsWith('CORS policy')) {
     return res.status(403).json({ message: err.message });
+  }
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(400).json({ message: 'File too large. Maximum size is 8MB per image.' });
+  }
+  if (err.code === 'LIMIT_FILE_COUNT') {
+    return res.status(400).json({ message: 'Too many files. Maximum 6 images allowed.' });
+  }
+  if (err.name === 'ValidationError') {
+    const messages = Object.values(err.errors).map((e) => e.message);
+    return res.status(400).json({ message: messages[0], errors: messages });
   }
   console.error(err.stack);
   res.status(500).json({ message: 'Internal server error', error: err.message });
