@@ -1,6 +1,7 @@
 services:
   - type: static_site
     name: yumvr-frontend
+    rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
 
