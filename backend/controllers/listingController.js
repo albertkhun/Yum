@@ -435,7 +435,118 @@ const uploadVR = async (req, res) => {
   }
 };
 
+// ── Haversine distance (km) ──────────────────────────────────────────────
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R   = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+const getNearbyListings = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const current = await Listing.findById(id).lean();
+    if (!current) return res.status(404).json({ message: 'Listing not found' });
+
+    const {
+      category,
+      'price.amount': _priceField,
+      location: { coordinates: { lat, lng } = {}, district } = {},
+      facilities = [],
+    } = current;
+    const currentPrice = current.price?.amount ?? 0;
+    const hasCoords    = lat != null && lng != null;
+
+    // ── Build a broad match ───────────────────────────────────────────────
+    const match = {
+      approved: true,
+      _id:      { $ne: current._id },
+      $or: [
+        { category },
+        { 'location.district': district },
+        ...(hasCoords
+          ? [{
+              'location.coordinates.lat': { $gte: lat - 0.3, $lte: lat + 0.3 },
+              'location.coordinates.lng': { $gte: lng - 0.3, $lte: lng + 0.3 },
+            }]
+          : []),
+      ],
+    };
+
+    const candidates = await Listing.find(match)
+      .select('title category price location images facilities vrMediaUrl approved status createdAt')
+      .limit(80)
+      .lean();
+
+    // ── Score & sort ─────────────────────────────────────────────────────
+    const PRICE_RANGE = 0.4; // ±40 %
+
+    const scored = candidates.map((l) => {
+      let score = 0;
+
+      // 1. Same category (highest weight)
+      if (l.category === category) score += 40;
+
+      // 2. Distance (if coords available)
+      let distanceKm = null;
+      if (
+        hasCoords &&
+        l.location?.coordinates?.lat != null &&
+        l.location?.coordinates?.lng != null
+      ) {
+        distanceKm = haversineKm(lat, lng, l.location.coordinates.lat, l.location.coordinates.lng);
+        if      (distanceKm <= 1)  score += 30;
+        else if (distanceKm <= 3)  score += 20;
+        else if (distanceKm <= 7)  score += 10;
+        else if (distanceKm <= 15) score += 5;
+      } else if (l.location?.district === district) {
+        score += 15; // same district fallback
+      }
+
+      // 3. Similar price (±40 %)
+      if (currentPrice > 0 && l.price?.amount) {
+        const ratio = l.price.amount / currentPrice;
+        if (ratio >= 1 - PRICE_RANGE && ratio <= 1 + PRICE_RANGE) score += 15;
+      }
+
+      // 4. Shared facilities
+      if (facilities.length > 0 && l.facilities?.length > 0) {
+        const shared = l.facilities.filter((f) => facilities.includes(f)).length;
+        score += Math.min(shared * 3, 15);
+      }
+
+      return { ...l, _score: score, distanceKm };
+    });
+
+    scored.sort((a, b) => b._score - a._score);
+    const top6 = scored.slice(0, 6);
+
+    // ── Format distance string ────────────────────────────────────────────
+    const formatDistance = (km) => {
+      if (km == null) return null;
+      if (km < 1)     return `${Math.round(km * 1000)} m away`;
+      return `${km.toFixed(1)} km away`;
+    };
+
+    const results = top6.map(({ _score, distanceKm, ...l }) => ({
+      ...l,
+      distanceAway: formatDistance(distanceKm),
+    }));
+
+    res.json({ success: true, listings: results });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch nearby listings', error: err.message });
+  }
+};
+
 module.exports = {
   createListing, getListings, getListingById, getMyListings,
   updateListing, deleteListing, toggleStatus, getPublicStats, uploadVR,
+  getNearbyListings,
 };

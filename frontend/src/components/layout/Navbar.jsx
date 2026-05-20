@@ -99,7 +99,7 @@ export default function Navbar() {
             </div>
             <div className="yumvr-brand-text">
               <div className="yumvr-name">
-                <span className="yumvr-yum">Yum</span><span className="yumvr-vr">VR</span>
+                <span className="yumvr-yum1">Yum</span><span className="yumvr-vr">VR</span>
               </div>
               <div className="yumvr-tagline hidden sm:block">Rental &amp; Stay Platform</div>
             </div>

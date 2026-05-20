@@ -14,9 +14,9 @@ const app = express();
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(compression({
   level: 6,       // Balanced: good compression ratio, reasonable CPU cost
-  threshold: 1024, // Don't compress responses under 1kB
+  threshold: 1024, // not compress responses under 1kB
   filter: (req, res) => {
-    // Don't compress already-compressed media (images, video)
+    // not compress already-compressed media (images, video)
     if (req.headers['x-no-compression']) return false;
     return compression.filter(req, res);
   },
@@ -99,6 +99,36 @@ app.use('/api/listings',                    apiLimiter,  require('./routes/listi
 app.use('/api/listings/:listingId/reviews',              require('./routes/reviewRoutes'));
 app.use('/api/wishlist',                    apiLimiter,  require('./routes/wishlistRoutes'));
 app.use('/api/admin',                                    require('./routes/adminRoutes'));
+
+// Health check — used by Render to confirm the service is alive
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Dynamic sitemap for listing pages — fetched by frontend sitemap index
+app.get('/api/sitemap-listings.xml', async (req, res) => {
+  try {
+    const Listing = require('./models/Listing');
+    const listings = await Listing.find(
+      { status: 'approved' },
+      { _id: 1, updatedAt: 1, title: 1 }
+    ).lean().limit(5000);
+
+    const urls = listings.map((l) => `
+  <url>
+    <loc>https://yumvr.tech/listings/${l._id}</loc>
+    <lastmod>${new Date(l.updatedAt).toISOString().split('T')[0]}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>`).join('');
+
+    res.header('Content-Type', 'application/xml');
+    res.header('Cache-Control', 'public, max-age=3600');
+    res.send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}\n</urlset>`);
+  } catch (err) {
+    res.status(500).send('<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"/>');
+  }
+});
 
 app.get('/', (req, res) => {
   res.json({

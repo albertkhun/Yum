@@ -14,7 +14,7 @@ export default function Footer() {
               </div>
               <div className="yumvr-brand-text">
                 <div className="yumvr-name">
-                  <span className="yumvr-yum text-black [text-shadow:_-1px_-1px_0_white,1px_-1px_0_white,-1px_1px_0_white,1px_1px_0_white]">Yum</span><span className="yumvr-vr">VR</span>
+                  <span className="yumvr-yum text-white">Yum</span><span className="yumvr-vr">VR</span>
                 </div>
                 <div className="yumvr-tagline">Rental &amp; Stay Platform</div>
               </div>

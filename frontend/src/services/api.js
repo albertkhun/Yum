@@ -67,6 +67,7 @@ export const authAPI = {
 export const listingAPI = {
   getAll:        (params) => api.get('/listings', { params }),
   getById:       (id)     => cachedGet(`/listings/${id}`, {}, 60_000),
+  getNearby:     (id)     => api.get(`/listings/${id}/nearby`),
   getMyListings: ()       => api.get('/listings/my/listings'),
   getPublicStats:()       => cachedGet('/listings/stats', {}, 5 * 60_000),
   create: (formData) => api.post('/listings', formData, {

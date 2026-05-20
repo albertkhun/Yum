@@ -7,10 +7,12 @@ import {
 import ImageCarousel   from '../../components/common/ImageCarousel';
 import VRViewer        from '../../components/common/VRViewer';
 import ReviewSection   from '../../components/common/ReviewSection';
+import NearbyListings  from '../../components/common/NearbyListings';
 import { PageSpinner } from '../../components/common/Spinner';
 import { listingAPI }  from '../../services/api';
 import { useAuth }     from '../../context/AuthContext';
 import { timeAgo, getCategoryColor } from '../../utils/helpers';
+import { useSEO, buildListingSchema, buildBreadcrumbSchema } from '../../hooks/useSEO';
 import toast from 'react-hot-toast';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
@@ -259,6 +261,23 @@ export default function ListingDetail() {
   const [loading,   setLoading]   = useState(true);
   const [showPhone, setShowPhone] = useState(false);
   const [vrOpen,    setVrOpen]    = useState(false);
+
+  // Dynamic SEO — updates <head> meta tags when listing data loads
+  useSEO(listing ? {
+    title:       `${listing.title} — YumVR`,
+    description: listing.description?.slice(0, 155) || `Find ${listing.category} in ${listing.location}, Manipur on YumVR`,
+    image:       listing.images?.[0],
+    url:         `https://yumvr.tech/listings/${listing._id}`,
+    type:        'article',
+    schema: {
+      ...buildListingSchema(listing),
+      breadcrumb: buildBreadcrumbSchema([
+        { name: 'Home',     path: '/' },
+        { name: 'Listings', path: '/listings' },
+        { name: listing.title, path: `/listings/${listing._id}` },
+      ]),
+    },
+  } : {});
 
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, [id]);
 
@@ -723,6 +742,9 @@ export default function ListingDetail() {
           </p>
         </div>
       )}
+
+      {/* NEARBY LISTINGS */}
+      <NearbyListings listingId={listing._id} />
 
       {/* REVIEWS */}
       <div className="mt-8 bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6">

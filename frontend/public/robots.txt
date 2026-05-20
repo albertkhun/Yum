@@ -1,1 +1,6 @@
-frontend/public/robots.txt
+User-agent: *
+Allow: /
+
+Crawl-delay: 2
+
+Sitemap: https://yumvr.tech/sitemap.xml
