@@ -120,46 +120,73 @@ export default function App() {
 
   const [backendReady, setBackendReady] = useState(false);
 
-  const appReady = backendReady;
-
   useEffect(() => {
-    const initializeApp = async () => {
-      try {
 
-        // Simulate backend/auth loading
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+    let interval;
+
+    const checkBackend = async () => {
+
+      try {
+const response = await fetch(
+  `${import.meta.env.VITE_API_URL}/health`
+);
+
+        if (response.ok) {
+
+          // stop checking
+          clearInterval(interval);
+
+          // keep loader minimum 2 sec
+          setTimeout(() => {
+            setBackendReady(true);
+          }, 2000);
+        }
 
       } catch (err) {
-        console.log(err);
-      } finally {
-        setBackendReady(true);
+
+        console.log("Backend not connected");
+
       }
     };
 
-    initializeApp();
+    // first check immediately
+    checkBackend();
+
+    // keep checking every 2 sec
+    interval = setInterval(checkBackend, 2000);
+
+    return () => clearInterval(interval);
+
   }, []);
 
-  return (
-    <>
-      <AppLoader visible={!appReady} />
 
-      <AuthProvider>
-        <WishlistProvider>
-          <BrowserRouter>
-            <Toaster
-              position="top-center"
-              toastOptions={{
-                duration: 3000,
-                style: {
-                  fontFamily: 'Plus Jakarta Sans, sans-serif',
-                  fontSize: '14px',
-                },
-              }}
-            />
-            <AppShell />
-          </BrowserRouter>
-        </WishlistProvider>
-      </AuthProvider>
-    </>
+  // ONLY SHOW LOADER
+  if (!backendReady) {
+    return <AppLoader visible />;
+  }
+
+
+  // SHOW APP AFTER BACKEND CONNECTS
+  return (
+    <AuthProvider>
+      <WishlistProvider>
+        <BrowserRouter>
+
+          <Toaster
+            position="top-center"
+            toastOptions={{
+              duration: 3000,
+              style: {
+                fontFamily: 'Plus Jakarta Sans, sans-serif',
+                fontSize: '14px',
+              },
+            }}
+          />
+
+          <AppShell />
+
+        </BrowserRouter>
+      </WishlistProvider>
+    </AuthProvider>
   );
 }
