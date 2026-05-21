@@ -1,4 +1,5 @@
-import { lazy, Suspense } from 'react';
+import AppLoader from './components/loaders/AppLoader';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -116,20 +117,49 @@ const AppShell = () => (
 );
 
 export default function App() {
+
+  const [backendReady, setBackendReady] = useState(false);
+
+  const appReady = backendReady;
+
+  useEffect(() => {
+    const initializeApp = async () => {
+      try {
+
+        // Simulate backend/auth loading
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      } catch (err) {
+        console.log(err);
+      } finally {
+        setBackendReady(true);
+      }
+    };
+
+    initializeApp();
+  }, []);
+
   return (
-    <AuthProvider>
-      <WishlistProvider>
-      <BrowserRouter>
-        <Toaster
-          position="top-center"
-          toastOptions={{
-            duration: 3000,
-            style: { fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: '14px' },
-          }}
-        />
-        <AppShell />
-      </BrowserRouter>
-      </WishlistProvider>
-    </AuthProvider>
+    <>
+      <AppLoader visible={!appReady} />
+
+      <AuthProvider>
+        <WishlistProvider>
+          <BrowserRouter>
+            <Toaster
+              position="top-center"
+              toastOptions={{
+                duration: 3000,
+                style: {
+                  fontFamily: 'Plus Jakarta Sans, sans-serif',
+                  fontSize: '14px',
+                },
+              }}
+            />
+            <AppShell />
+          </BrowserRouter>
+        </WishlistProvider>
+      </AuthProvider>
+    </>
   );
 }

@@ -14,6 +14,7 @@ import { useAuth }     from '../../context/AuthContext';
 import { timeAgo, getCategoryColor } from '../../utils/helpers';
 import { useSEO, buildListingSchema, buildBreadcrumbSchema } from '../../hooks/useSEO';
 import toast from 'react-hot-toast';
+import ListingDetailSkeleton from "../../components/loaders/ListingDetailSkeleton";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
@@ -306,7 +307,7 @@ export default function ListingDetail() {
     action?.();
   };
 
-  if (loading) return <PageSpinner />;
+  if (loading) return <ListingDetailSkeleton />;
   if (!listing) return null;
 
   const {
