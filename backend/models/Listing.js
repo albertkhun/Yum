@@ -7,7 +7,7 @@ const listingSchema = new mongoose.Schema(
     category: {
       type: String,
       required: [true, 'Category is required'],
-      enum: ['Rent', 'Apartment', 'PG', 'Hostel', 'Lodge', 'Tolet', 'Other'],
+      enum: ['Rent',  'PG', 'Hostel'],
     },
     price: {
       amount: { type: Number, required: [true, 'Price is required'], min: 0 },

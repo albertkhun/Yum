@@ -524,7 +524,10 @@ const getNearbyListings = async (req, res) => {
       return { ...l, _score: score, distanceKm };
     });
 
-    scored.sort((a, b) => b._score - a._score);
+    
+    
+
+    
     const top6 = scored.slice(0, 6);
 
     // ── Format distance string ────────────────────────────────────────────

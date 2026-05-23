@@ -6,7 +6,7 @@ import { DISTRICTS, CATEGORIES, FACILITIES } from '../../utils/helpers';
 import MapPicker from '../../components/common/MapPicker';
 import toast from 'react-hot-toast';
 
-const PERIODS = ['per month', 'per week', 'per day'];
+const PERIODS = ['per month', 'per week', 'per night'];
 const Req = () => <span className="text-red-400 ml-0.5">*</span>;
 const Section = ({ title, children }) => (
   <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6">
@@ -132,7 +132,6 @@ export default function CreateListing() {
                 <span className="text-gray-400 font-normal ml-1">(if different from contact)</span>
               </label>
               <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-green-500 text-lg">📱</span>
                 <input name="whatsappNumber" value={form.whatsappNumber} onChange={handle}
                   className="input pl-10" placeholder="Leave blank to use contact number" type="tel" />
               </div>

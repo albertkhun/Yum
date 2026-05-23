@@ -163,13 +163,12 @@ export default function ListingsPage() {
     });
   }, [setSearchParams]);
 
-  const handleSearch = useCallback(({ search: s, district: d, category: c }) => {
-    const p = new URLSearchParams();
-    if (s) p.set('search', s);
-    if (d) p.set('district', d);
-    if (c) p.set('category', c);
+  const handleSearch = useCallback(({ search: s }) => {
+    const p = new URLSearchParams(searchParams);
+    if (s) p.set('search', s); else p.delete('search');
+    p.delete('page');
     setSearchParams(p);
-  }, [setSearchParams]);
+  }, [searchParams, setSearchParams]);
 
   const goPage = useCallback((n) => {
     setSearchParams((prev) => {
@@ -309,7 +308,7 @@ export default function ListingsPage() {
           ) : (
             <div className={
               view === 'grid'
-                ? 'grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-8'
+                ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5'
                 : 'flex flex-col gap-4'
             }>
               {listings.map((listing) =>

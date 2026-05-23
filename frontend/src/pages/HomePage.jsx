@@ -9,9 +9,6 @@ const CATEGORIES = [
   { name: 'Rent',      icon: Home,      color: 'bg-blue-50 text-blue-600' },
   { name: 'Hostel',    icon: Building2, color: 'bg-purple-50 text-purple-600' },
   { name: 'PG',        icon: Home,      color: 'bg-green-50 text-green-600' },
-  { name: 'Apartment', icon: Building2, color: 'bg-yellow-50 text-yellow-700' },
-  { name: 'Tolet',     icon: Store,     color: 'bg-pink-50 text-pink-600' },
-  { name: 'Lodge',     icon: TreePine,  color: 'bg-teal-50 text-teal-600' },
 ];
 
 const WHY = [
@@ -266,42 +263,19 @@ export default function HomePage() {
           </svg>
         </div>
       </section>
+    {/* CATEGORIES */}
+      <section className="hp-cats-section">
+        <div className="hp-cats-strip">
+          <Link to="/listings" className="hp-cat-pill hp-cat-pill-all">
+            <span className="hp-cat-pill-label">All</span>
+          </Link>
 
-      <section className="bg-gray-50 py-8 sm:py-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {[
-              { label: 'Active Listings',   value: stats?.activeListings },
-              { label: 'Districts Covered', value: stats?.activeDistricts },
-              { label: 'Active Users',      value: stats?.tenantCount },
-              { label: 'Verified Owners',   value: stats?.ownerCount },
-            ].map(({ label, value }) => (
-              <div key={label} className="text-center bg-white rounded-2xl p-4 sm:p-6 border border-gray-100 shadow-sm">
-                {value === undefined || value === null ? (
-                  <div className="h-8 w-16 bg-gray-200 rounded-lg animate-pulse mx-auto mb-1" />
-                ) : (
-                  <p className="font-display font-bold text-2xl sm:text-3xl text-brand">{value}</p>
-                )}
-                <p className="text-xs sm:text-sm text-gray-500 mt-1">{label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="page-wrapper">
-        <div className="text-center mb-8">
-          <h2 className="section-title mb-2">Browse by Category</h2>
-          <p className="text-gray-500 text-sm sm:text-base">Find exactly what you're looking for</p>
-        </div>
-        <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-          {CATEGORIES.map(({ name, icon: Icon, color }) => (
-            <Link key={name} to={`/listings?category=${name}`}
-              className="group flex flex-col items-center gap-2 p-4 sm:p-5 bg-white rounded-2xl border border-gray-100 hover:border-brand/30 hover:shadow-md transition-all duration-200 text-center">
-              <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center ${color} group-hover:scale-110 transition-transform`}>
-                <Icon size={20} />
-              </div>
-              <span className="text-xs sm:text-sm font-semibold text-gray-700 group-hover:text-brand transition-colors">{name}</span>
+          {CATEGORIES.map(({ name, icon: Icon, dot }) => (
+            <Link key={name} to={`/listings?category=${name}`} className="hp-cat-pill">
+              <span className={`hp-cat-pill-dot ${dot}`}>
+                <Icon size={13} />
+              </span>
+              <span className="hp-cat-pill-label">{name}</span>
             </Link>
           ))}
         </div>
@@ -325,23 +299,27 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="bg-gray-50 py-12 sm:py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-10">
-            <h2 className="section-title mb-2">Why YumVR?</h2>
-            <p className="text-gray-500 text-sm sm:text-base">Built for the people of Manipur</p>
+      {/* Why YumVR */}
+<section className="hp-why-section">
+  <div className="page-wrapper" style={{ paddingTop: 0, paddingBottom: 0 }}>
+    <p className="hp-why-eyebrow">Why YumVR?</p>
+
+    <div className="hp-why-grid">
+      {WHY.map(({ icon: Icon, title, desc, color }) => (
+        <div key={title} className="hp-why-card">
+          <div className={`hp-why-icon ${color}`}>
+            <Icon size={16} />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {WHY.map(({ icon: Icon, title, desc, color }) => (
-              <div key={title} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm text-center">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4 ${color}`}><Icon size={22} /></div>
-                <h3 className="font-display font-bold text-gray-900 mb-2">{title}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{desc}</p>
-              </div>
-            ))}
+
+          <div className="hp-why-text">
+            <h3 className="hp-why-title">{title}</h3>
+            <p className="hp-why-desc">{desc}</p>
           </div>
         </div>
-      </section>
+      ))}
+    </div>
+  </div>
+</section>
 
       <section className="page-wrapper">
         <div className="bg-gradient-to-r from-orange-500 to-amber-400 rounded-3xl p-8 sm:p-12 text-center text-white overflow-hidden relative">
