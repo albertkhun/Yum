@@ -1187,3 +1187,35 @@
   line-height: 1.55;
   margin: 0;
 }
+
+
+/* Footer socials */
+
+.footer-social {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #d1d5db;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    transform 150ms ease;
+  text-decoration: none;
+}
+
+.footer-social:hover {
+  background: rgba(232,93,4,0.14);
+  border-color: rgba(232,93,4,0.4);
+  color: #fb923c;
+  transform: translateY(-2px);
+}
+
+.footer-social:active {
+  transform: scale(0.96);
+}
