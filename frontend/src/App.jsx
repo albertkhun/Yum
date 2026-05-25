@@ -1,19 +1,18 @@
 import AppLoader from './components/loaders/AppLoader';
-import { lazy, Suspense, useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { lazy, Suspense, useEffect, useState, useCallback } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { WishlistProvider } from './context/WishlistContext';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
-
-// Critical path — eager (in initial bundle)
 import HomePage     from './pages/HomePage';
 import ListingsPage from './pages/listings/ListingsPage';
 
 // Auth pages — moderate priority
 const LoginPage    = lazy(() => import('./pages/auth/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'));
+ 
 
 // Detail page — high-traffic but needs carousel/map, worth splitting
 const ListingDetail   = lazy(() => import('./pages/listings/ListingDetail'));
@@ -31,10 +30,11 @@ const AdminUsers     = lazy(() => import('./pages/admin/AdminUsers'));
 const AdminSettings  = lazy(() => import('./pages/admin/AdminSettings'));
 
 // Misc
-const RoleSelectPage    = lazy(() => import('./pages/auth/RoleSelectPage'));
-const SettingsPage      = lazy(() => import('./pages/SettingsPage'));
+const RoleSelectPage     = lazy(() => import('./pages/auth/RoleSelectPage'));
+const SettingsPage       = lazy(() => import('./pages/SettingsPage'));
 const ChangePasswordPage = lazy(() => import('./pages/ChangePasswordPage'));
-const WishlistPage      = lazy(() => import('./pages/WishlistPage'));
+const WishlistPage       = lazy(() => import('./pages/WishlistPage'));
+const TermsPage          = lazy(() => import('./pages/TermsPage.jsx'));
 
 // ── Inline spinner — tiny, no extra bundle ──────────────────────────────
 const Spinner = () => (
@@ -79,6 +79,7 @@ const AppShell = () => (
           <Route path="/listings"     element={<ListingsPage />} />
           <Route path="/listings/:id" element={<ListingDetail />} />
           <Route path="/listings/:id/review" element={<WriteReviewPage />} />
+          <Route path="/terms" element={<TermsPage />} />
 
           {/* Auth */}
           <Route path="/login"    element={<LoginPage />} />
@@ -116,77 +117,93 @@ const AppShell = () => (
   </div>
 );
 
-export default function App() {
+// ── Backend wakeup — ONLY shown on the home page '/' ─────────────────────
+// On any other route we let the app render immediately.
+// The backend check still runs in the background so warm-up happens,
+// but it doesn't gate the UI on non-home pages.
+const BACKEND_URL = import.meta.env.VITE_API_URL || '';
 
-  const [backendReady, setBackendReady] = useState(false);
+function useBackendWakeup() {
+  const [ready, setReady] = useState(false);
 
-  useEffect(() => {
-
-    let interval;
-
-    const checkBackend = async () => {
-
-      try {
-const response = await fetch(
-  `${import.meta.env.VITE_API_URL}/health`
-);
-
-        if (response.ok) {
-
-          // stop checking
-          clearInterval(interval);
-
-          // keep loader minimum 2 sec
-          setTimeout(() => {
-            setBackendReady(true);
-          }, 2000);
-        }
-
-      } catch (err) {
-
-        console.log("Backend not connected");
-
-      }
-    };
-
-    // first check immediately
-    checkBackend();
-
-    // keep checking every 2 sec
-    interval = setInterval(checkBackend, 2000);
-
-    return () => clearInterval(interval);
-
+  const check = useCallback(async () => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/health`);
+      if (res.ok) return true;
+    } catch {
+      /* backend still sleeping */
+    }
+    return false;
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    let interval;
 
-  // ONLY SHOW LOADER
-  if (!backendReady) {
+    const run = async () => {
+      const ok = await check();
+      if (cancelled) return;
+      if (ok) {
+        // Minimum 2 s so the loader animation completes gracefully
+        setTimeout(() => { if (!cancelled) setReady(true); }, 2000);
+        return;
+      }
+      interval = setInterval(async () => {
+        const ok2 = await check();
+        if (ok2 && !cancelled) {
+          clearInterval(interval);
+          setTimeout(() => { if (!cancelled) setReady(true); }, 2000);
+        }
+      }, 2000);
+    };
+
+    run();
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [check]);
+
+  return ready;
+}
+
+// ── Home-only loader wrapper ──────────────────────────────────────────────
+// We need to read the location, so this must live inside <BrowserRouter>
+const AppWithLoader = () => {
+  const location = useLocation();
+  const isHome = location.pathname === '/';
+  const backendReady = useBackendWakeup();
+
+  // Only block render on the home page while the backend wakes up.
+  // On every other route, show the app immediately.
+  if (isHome && !backendReady) {
     return <AppLoader visible />;
   }
 
-
-  // SHOW APP AFTER BACKEND CONNECTS
   return (
     <AuthProvider>
       <WishlistProvider>
-        <BrowserRouter>
-
-          <Toaster
-            position="top-center"
-            toastOptions={{
-              duration: 3000,
-              style: {
-                fontFamily: 'Plus Jakarta Sans, sans-serif',
-                fontSize: '14px',
-              },
-            }}
-          />
-
-          <AppShell />
-
-        </BrowserRouter>
+        <Toaster
+          position="top-center"
+          toastOptions={{
+            duration: 3000,
+            style: {
+              fontFamily: 'Plus Jakarta Sans, sans-serif',
+              fontSize: '14px',
+            },
+          }}
+        />
+        <AppShell />
       </WishlistProvider>
     </AuthProvider>
+  );
+};
+
+// ── Root export ───────────────────────────────────────────────────────────
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppWithLoader />
+    </BrowserRouter>
   );
 }

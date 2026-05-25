@@ -100,8 +100,11 @@ app.use('/api/listings/:listingId/reviews',              require('./routes/revie
 app.use('/api/wishlist',                    apiLimiter,  require('./routes/wishlistRoutes'));
 app.use('/api/admin',                                    require('./routes/adminRoutes'));
 
-// Health check — used by Render to confirm the service is alive
-app.get('/api/health', (req, res) => {
+// Health check — used by Render to confirm the service is alive.
+// Exposed at both /api/health (Render healthCheckPath) and /health
+// so the frontend fetch(`${VITE_API_URL}/health`) works correctly
+// regardless of whether VITE_API_URL ends with '/api' or not.
+app.get(['/api/health', '/health'], (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 

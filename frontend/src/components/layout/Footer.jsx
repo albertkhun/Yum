@@ -5,9 +5,7 @@ import {
   MapPin,
   Facebook,
   Instagram,
-  Twitter,
   Youtube,
-  Linkedin
 } from 'lucide-react';
 
 import yumvrLogo from '../../assets/yumvr-logo.jpeg';
@@ -26,22 +24,14 @@ export default function Footer() {
               className="flex items-center gap-2.5 group yumvr-nav-brand mb-3"
             >
               <div className="yumvr-logo-wrap">
-                <img
-                  src={yumvrLogo}
-                  alt="YumVR"
-                  className="yumvr-logo-img"
-                />
+                <img src={yumvrLogo} alt="YumVR" className="yumvr-logo-img" />
               </div>
-
               <div className="yumvr-brand-text">
                 <div className="yumvr-name">
                   <span className="yumvr-yum text-white">Yum</span>
                   <span className="yumvr-vr">VR</span>
                 </div>
-
-                <div className="yumvr-tagline">
-                  Rental &amp; Stay Platform
-                </div>
+                <div className="yumvr-tagline">Rental &amp; Stay Platform</div>
               </div>
             </Link>
 
@@ -50,88 +40,48 @@ export default function Footer() {
               VR tours on YumVR. Explore smarter living across Manipur.
             </p>
 
-            {/* Socials */}
             <div className="flex items-center gap-3">
-
-              <a
-                href="https://www.facebook.com/profile.php?id=100069704782347"
-                target="_blank"
-                rel="noreferrer"
-                className="footer-social"
-              >
+              <a href="https://www.facebook.com/profile.php?id=100069704782347" target="_blank" rel="noreferrer" className="footer-social">
                 <Facebook size={17} />
               </a>
-
-              <a
-                href="https://www.instagram.com/yumvr.tech/"
-                target="_blank"
-                rel="noreferrer"
-                className="footer-social"
-              >
+              <a href="https://www.instagram.com/yumvr.tech/" target="_blank" rel="noreferrer" className="footer-social">
                 <Instagram size={17} />
               </a>
-
-              <a
-                href="https://www.youtube.com/channel/UCFY_YsIl0NxM0KH7vtGHtxw"
-                target="_blank"
-                rel="noreferrer"
-                className="footer-social"
-              >
+              <a href="https://www.youtube.com/channel/UCFY_YsIl0NxM0KH7vtGHtxw" target="_blank" rel="noreferrer" className="footer-social">
                 <Youtube size={17} />
               </a>
-
             </div>
           </div>
 
-
           {/* Contact */}
           <div>
-            <h4 className="font-semibold text-white text-sm mb-3">
-              Contact
-            </h4>
-
+            <h4 className="font-semibold text-white text-sm mb-3">Contact</h4>
             <ul className="space-y-3 text-sm">
-
               <li className="flex items-start gap-2">
-                <MapPin
-                  size={15}
-                  className="text-brand mt-0.5 shrink-0"
-                />
-                <span className="text-gray-400">
-                  Imphal, Manipur, India
-                </span>
+                <MapPin size={15} className="text-brand mt-0.5 shrink-0" />
+                <span className="text-gray-400">Imphal, Manipur, India</span>
               </li>
-
               <li className="flex items-center gap-2">
-                <Phone
-                  size={15}
-                  className="text-brand shrink-0"
-                />
-                <span className="text-gray-400">
-                  +91 9366256348
-                </span>
+                <Phone size={15} className="text-brand shrink-0" />
+                <span className="text-gray-400">+91 9366256348</span>
               </li>
-
               <li className="flex items-center gap-2">
-                <Mail
-                  size={15}
-                  className="text-brand shrink-0"
-                />
-                <span className="text-gray-400">
-                  support.yumvr.tech@gmail.com
-                </span>
+                <Mail size={15} className="text-brand shrink-0" />
+                <span className="text-gray-400">support.yumvr.tech@gmail.com</span>
               </li>
-
             </ul>
           </div>
 
         </div>
 
-        {/* Bottom */}
-        <div className="border-t border-gray-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-500">
-          <p>
-            © {new Date().getFullYear()} YumVR. All rights reserved.
-          </p>
+        {/* Bottom bar */}
+        <div className="border-t border-gray-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500">
+          <p>© {new Date().getFullYear()} YumVR. All rights reserved.</p>
+          <div className="flex items-center gap-4">
+            <Link to="/terms" className="hover:text-brand transition-colors duration-150">
+              Terms &amp; Conditions
+            </Link>
+          </div>
         </div>
 
       </div>
