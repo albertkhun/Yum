@@ -1,5 +1,5 @@
 services:
-  # ── Backend API 
+  
   - type: web
     name: yumvr-backend
     env: node
@@ -12,12 +12,9 @@ services:
         value: production
       - key: PORT
         value: 5001
-      # Set these in Render dashboard (secret values):
-      # MONGO_URI, JWT_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
-      # CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET,
-      # ALLOWED_ORIGINS, CORS_MODE
+      
 
-  # ── Frontend Static Site ────────────────────────────────────────────────
+  
   - type: web
     name: yumvr-frontend
     env: static
@@ -25,14 +22,14 @@ services:
     buildCommand: npm install && npm run build
     staticPublishPath: dist
 
-    # SPA fallback — ALL routes serve index.html so React Router handles them
+    
     routes:
       - type: rewrite
         source: /*
         destination: /index.html
 
     headers:
-      # JS modules — must have correct MIME type or browser refuses to run them
+      
       - path: /assets/*.js
         name: Content-Type
         value: application/javascript; charset=utf-8
@@ -40,15 +37,15 @@ services:
       - path: /assets/*.css
         name: Content-Type
         value: text/css; charset=utf-8
-      # Long-term cache for hashed assets (they never change content)
+      
       - path: /assets/*
         name: Cache-Control
         value: public, max-age=31536000, immutable
-      # No-cache for HTML so the app shell always updates
+      
       - path: /index.html
         name: Cache-Control
         value: no-cache, no-store, must-revalidate
-      # Manifest and icons — short cache
+      
       - path: /manifest.json
         name: Cache-Control
         value: public, max-age=86400
