@@ -1,22 +1,33 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, X } from 'lucide-react';
+import { parseNLQuery } from "../../utils/nlpSearch";
 
 export default function SearchBar({ onSearch }) {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
 
   const handleSubmit = (e) => {
-    e.preventDefault();
-    const q = query.trim();
-    if (onSearch) {
-      onSearch({ search: q, district: '', category: '' });
-    } else {
-      const params = new URLSearchParams();
-      if (q) params.set('search', q);
-      navigate(`/listings?${params.toString()}`);
-    }
-  };
+  e.preventDefault();
+
+  const q = query.trim();
+
+  const parsed = parseNLQuery(q);
+
+  if (onSearch) {
+    onSearch(parsed);
+  } else {
+    const params = new URLSearchParams();
+
+    Object.entries(parsed).forEach(([key, value]) => {
+      if (value) {
+        params.set(key, value);
+      }
+    });
+
+    navigate(`/listings?${params.toString()}`);
+  }
+};
 
   const clear = () => {
     setQuery('');
